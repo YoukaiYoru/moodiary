@@ -1,35 +1,35 @@
 const { Model, DataTypes, Sequelize } = require('sequelize');
 
 const USER_PROFILE_TABLE = 'user_profiles';
+
 const UserProfileSchema = {
-  userId: {
+  user_id: {
     allowNull: false,
+    type: DataTypes.STRING, // Clerk usa STRING para el ID de usuario
     primaryKey: true,
-    type: DataTypes.STRING,
-    field: 'user_id',
   },
-  displayName: {
-    type: DataTypes.STRING,
-    field: 'display_name',
+  display_name: {
+    type: DataTypes.TEXT,
   },
-  preferredMood: {
-    type: DataTypes.STRING,
-    field: 'preferred_mood',
+  preferred_mood: {
+    type: DataTypes.TEXT,
   },
-  createdAt: {
+  created_at: {
     allowNull: false,
     type: DataTypes.DATE,
-    field: 'created_at',
     defaultValue: Sequelize.NOW,
   },
 };
 
 class UserProfile extends Model {
   static associate(models) {
-    this.hasMany(models.MoodEntry, { foreignKey: 'userId', as: 'moodEntries' });
+    this.hasMany(models.MoodEntry, {
+      foreignKey: 'user_id',
+      as: 'mood_entries',
+    });
     this.hasMany(models.UserDailyQuote, {
-      foreignKey: 'userId',
-      as: 'dailyQuotes',
+      foreignKey: 'user_id',
+      as: 'daily_quotes',
     });
   }
 

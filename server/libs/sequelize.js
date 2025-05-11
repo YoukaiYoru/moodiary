@@ -17,4 +17,14 @@ const options = {
 const sequelize = new Sequelize(URI, options);
 setupModels(sequelize);
 
+// Conectar a la base de datos
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('Conexión a la base de datos establecida con éxito.');
+  })
+  .catch((err) => {
+    console.error('No se pudo conectar a la base de datos:', err);
+  });
+
 module.exports = sequelize;

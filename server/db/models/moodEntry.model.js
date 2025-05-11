@@ -9,37 +9,47 @@ const MoodEntrySchema = {
     primaryKey: true,
     type: DataTypes.INTEGER,
   },
-  userId: {
+  user_id: {
     allowNull: false,
     type: DataTypes.STRING,
-    field: 'user_id',
+    references: {
+      model: 'user_profiles',
+      key: 'user_id',
+    },
+    onDelete: 'CASCADE',
   },
-  moodTypeId: {
+  mood_type_id: {
     allowNull: false,
     type: DataTypes.INTEGER,
-    field: 'mood_type_id',
+    references: {
+      model: 'mood_types',
+      key: 'id',
+    },
+    onDelete: 'CASCADE',
   },
   note: {
     type: DataTypes.TEXT,
   },
-  createdAt: {
+  created_at: {
     allowNull: false,
     type: DataTypes.DATE,
-    field: 'created_at',
     defaultValue: Sequelize.NOW,
   },
 };
 
 class MoodEntry extends Model {
   static associate(models) {
-    this.belongsTo(models.UserProfile, { foreignKey: 'userId', as: 'user' });
+    this.belongsTo(models.UserProfile, {
+      foreignKey: 'user_id',
+      as: 'user_profile',
+    });
     this.belongsTo(models.MoodType, {
-      foreignKey: 'moodTypeId',
-      as: 'moodType',
+      foreignKey: 'mood_type_id',
+      as: 'mood_type',
     });
     this.belongsToMany(models.Tag, {
       through: models.MoodEntryTag,
-      foreignKey: 'entryId',
+      foreignKey: 'entry_id',
       as: 'tags',
     });
   }
@@ -53,4 +63,5 @@ class MoodEntry extends Model {
     };
   }
 }
+
 module.exports = { MOOD_ENTRY_TABLE, MoodEntrySchema, MoodEntry };

@@ -9,29 +9,36 @@ const UserDailyQuoteSchema = {
     primaryKey: true,
     type: DataTypes.INTEGER,
   },
-  userId: {
+  user_id: {
     allowNull: false,
     type: DataTypes.STRING,
-    field: 'user_id',
+    references: {
+      model: 'user_profiles',
+      key: 'user_id',
+    },
+    onDelete: 'CASCADE',
   },
-  quoteId: {
+
+  quote_id: {
     allowNull: false,
     type: DataTypes.INTEGER,
-    field: 'quote_id',
   },
-  quoteDate: {
+  quote_date: {
     allowNull: false,
     type: DataTypes.DATEONLY,
-    field: 'quote_date',
-    defaultValue: Sequelize.NOW,
+    defaultValue: Sequelize.literal('CURRENT_DATE'),
   },
 };
 
 class UserDailyQuote extends Model {
   static associate(models) {
-    this.belongsTo(models.UserProfile, { foreignKey: 'userId', as: 'user' });
+    this.belongsTo(models.UserProfile, {
+      foreignKey: 'user_id',
+      as: 'user',
+    });
+
     this.belongsTo(models.MotivationalQuote, {
-      foreignKey: 'quoteId',
+      foreignKey: 'quote_id',
       as: 'quote',
     });
   }
@@ -42,6 +49,12 @@ class UserDailyQuote extends Model {
       tableName: USER_DAILY_QUOTE_TABLE,
       modelName: 'UserDailyQuote',
       timestamps: false,
+      indexes: [
+        {
+          unique: true,
+          fields: ['user_id', 'quote_date'],
+        },
+      ],
     };
   }
 }

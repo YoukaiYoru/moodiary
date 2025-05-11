@@ -1,4 +1,4 @@
-const { Model, DataTypes, Sequelize } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 
 const TAG_TABLE = 'tags';
 
@@ -11,8 +11,8 @@ const TagSchema = {
   },
   name: {
     allowNull: false,
-    type: DataTypes.STRING,
     unique: true,
+    type: DataTypes.TEXT,
   },
 };
 
@@ -20,7 +20,8 @@ class Tag extends Model {
   static associate(models) {
     this.belongsToMany(models.MoodEntry, {
       through: models.MoodEntryTag,
-      foreignKey: 'tagId',
+      foreignKey: 'tag_id',
+      otherKey: 'entry_id',
       as: 'entries',
     });
   }
@@ -34,4 +35,5 @@ class Tag extends Model {
     };
   }
 }
+
 module.exports = { TAG_TABLE, TagSchema, Tag };

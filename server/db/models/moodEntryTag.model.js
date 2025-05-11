@@ -1,23 +1,25 @@
-const { Model, DataTypes, Sequelize } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 
 const MOOD_ENTRY_TAG_TABLE = 'mood_entry_tags';
 
 const MoodEntryTagSchema = {
-  entryId: {
+  entry_id: {
     allowNull: false,
-    type: DataTypes.INTEGER,
-    field: 'entry_id',
     primaryKey: true,
+    type: DataTypes.INTEGER,
   },
-  tagId: {
+  tag_id: {
     allowNull: false,
-    type: DataTypes.INTEGER,
-    field: 'tag_id',
     primaryKey: true,
+    type: DataTypes.INTEGER,
   },
 };
 
 class MoodEntryTag extends Model {
+  static associate() {
+    // No es necesario definir asociaciones aquí
+  }
+
   static config(sequelize) {
     return {
       sequelize,

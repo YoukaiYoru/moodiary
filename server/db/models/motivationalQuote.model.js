@@ -1,4 +1,5 @@
 const { Model, DataTypes, Sequelize } = require('sequelize');
+
 const MOTIVATIONAL_QUOTE_TABLE = 'motivational_quotes';
 
 const MotivationalQuoteSchema = {
@@ -12,15 +13,17 @@ const MotivationalQuoteSchema = {
     allowNull: false,
     type: DataTypes.TEXT,
   },
-  moodScoreTarget: {
+  mood_score_target: {
     allowNull: false,
     type: DataTypes.INTEGER,
-    field: 'mood_score_target',
+    validate: {
+      min: 1,
+      max: 5,
+    },
   },
-  createdAt: {
+  created_at: {
     allowNull: false,
     type: DataTypes.DATE,
-    field: 'created_at',
     defaultValue: Sequelize.NOW,
   },
 };
@@ -28,8 +31,8 @@ const MotivationalQuoteSchema = {
 class MotivationalQuote extends Model {
   static associate(models) {
     this.hasMany(models.UserDailyQuote, {
-      foreignKey: 'quoteId',
-      as: 'userQuotes',
+      foreignKey: 'quote_id',
+      as: 'daily_quotes',
     });
   }
 

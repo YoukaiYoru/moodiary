@@ -11,25 +11,24 @@ const MoodTypeSchema = {
   },
   name: {
     allowNull: false,
+    type: DataTypes.TEXT,
     unique: true,
-    type: DataTypes.STRING,
   },
-  moodScore: {
+  mood_score: {
     allowNull: false,
     type: DataTypes.INTEGER,
-    field: 'mood_score',
+    validate: {
+      min: 1,
+      max: 5,
+    },
   },
 };
 
 class MoodType extends Model {
   static associate(models) {
     this.hasMany(models.MoodEntry, {
-      foreignKey: 'moodTypeId',
-      as: 'moodEntries',
-    });
-    this.hasMany(models.MotivationalQuote, {
-      foreignKey: 'moodScoreTarget',
-      as: 'quotes',
+      foreignKey: 'mood_type_id',
+      as: 'mood_entries',
     });
   }
 
