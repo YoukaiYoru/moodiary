@@ -1,5 +1,12 @@
+require('dotenv').config(); // Para cargar variables de entorno
 const express = require('express');
 const cors = require('cors');
+const {
+  clerkMiddleware,
+  requireAuth,
+  getAuth,
+  clerkClient,
+} = require('@clerk/express');
 const routerApi = require('./routes');
 const {
   logErrors,
@@ -10,26 +17,36 @@ const {
 
 const app = express();
 app.use(express.json());
+
 const port = process.env.PORT || 3000;
 
+// CORS Configuration
 const whitelist = ['http://localhost:5001', 'https://myapp.com'];
-const options = {
+const corsOptions = {
   origin: (origin, callback) => {
-    if (whitelist.includes(origin) || !origin) {
+    if (!origin || whitelist.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
+  credentials: true,
 };
-app.use(cors(options));
+app.use(cors(corsOptions));
 
+// Clerk Middleware with options
+app.use(clerkMiddleware());
+
+// Your existing routes
 routerApi(app);
+
+// Error handling middlewares
 app.use(logErrors);
 app.use(boomErrorHandler);
 app.use(sequelizeErrorHandler);
 app.use(errorHandler);
 
+// Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server is running at http://localhost:${port}`);
 });

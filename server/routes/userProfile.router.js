@@ -1,12 +1,12 @@
 const express = require('express');
 const { requireAuth, getAuth } = require('@clerk/express');
-const ProfileService = require('../services/profile.service');
+const ProfileService = require('../services/userProfile.service');
 
 const router = express.Router();
 const service = new ProfileService();
 
 // GET /api/profile - Obtener el perfil del usuario actual
-router.get('/', requireAuth(), async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const profile = await service.findByClerkId(userId);
@@ -17,7 +17,7 @@ router.get('/', requireAuth(), async (req, res, next) => {
 });
 
 // POST /api/profile - Crear perfil si no existe (opcional, útil al registrarse)
-router.post('/', requireAuth(), async (req, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const profile = await service.createIfNotExists(userId);
@@ -28,7 +28,7 @@ router.post('/', requireAuth(), async (req, res, next) => {
 });
 
 // PATCH /api/profile - Actualizar campos del perfil (ej. mood, notas)
-router.patch('/', requireAuth(), async (req, res, next) => {
+router.patch('/', async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const changes = req.body;
@@ -40,7 +40,7 @@ router.patch('/', requireAuth(), async (req, res, next) => {
 });
 
 // DELETE /api/profile - Eliminar perfil (si decides permitirlo)
-router.delete('/', requireAuth(), async (req, res, next) => {
+router.delete('/', async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const result = await service.delete(userId);
