@@ -1,13 +1,13 @@
-const { MoodType } = require('../libs/sequelize');
+const { models } = require('../libs/sequelize');
 const boom = require('@hapi/boom');
 
 class MoodTypeService {
   async find() {
-    return await MoodType.findAll();
+    return await models.MoodType.findAll();
   }
 
   async findOne(id) {
-    const moodType = await MoodType.findByPk(id);
+    const moodType = await models.MoodType.findByPk(id);
     if (!moodType) {
       throw boom.notFound('MoodType not found');
     }
@@ -15,7 +15,7 @@ class MoodTypeService {
   }
 
   async create(data) {
-    return await MoodType.create(data);
+    return await models.MoodType.create(data);
   }
 
   async update(id, changes) {

@@ -1,13 +1,13 @@
-const { MotivationalQuote } = require('../libs/sequelize');
+const { models } = require('../libs/sequelize');
 const Boom = require('@hapi/boom');
 
 class MotivationalQuoteService {
   async find() {
-    return await MotivationalQuote.findAll();
+    return await models.MotivationalQuote.findAll();
   }
 
   async findOne(id) {
-    const quote = await MotivationalQuote.findByPk(id);
+    const quote = await models.MotivationalQuote.findByPk(id);
     if (!quote) {
       throw Boom.notFound('Quote not found');
     }
@@ -15,7 +15,7 @@ class MotivationalQuoteService {
   }
 
   async create(data) {
-    return await MotivationalQuote.create(data);
+    return await models.MotivationalQuote.create(data);
   }
 
   async update(id, changes) {
