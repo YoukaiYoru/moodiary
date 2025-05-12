@@ -4,27 +4,25 @@ const MOTIVATIONAL_QUOTE_TABLE = 'motivational_quotes';
 
 const MotivationalQuoteSchema = {
   id: {
-    allowNull: false,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
-    type: DataTypes.INTEGER,
   },
   message: {
-    allowNull: false,
     type: DataTypes.TEXT,
+    allowNull: false,
   },
   mood_score_target: {
-    allowNull: false,
     type: DataTypes.INTEGER,
+    allowNull: false,
     validate: {
       min: 1,
       max: 5,
     },
   },
   created_at: {
-    allowNull: false,
     type: DataTypes.DATE,
-    defaultValue: Sequelize.NOW,
+    defaultValue: DataTypes.NOW,
   },
 };
 
@@ -32,7 +30,8 @@ class MotivationalQuote extends Model {
   static associate(models) {
     this.hasMany(models.UserDailyQuote, {
       foreignKey: 'quote_id',
-      as: 'daily_quotes',
+      as: 'dailyUses',
+      onDelete: 'SET NULL',
     });
   }
 
@@ -47,7 +46,7 @@ class MotivationalQuote extends Model {
 }
 
 module.exports = {
-  MOTIVATIONAL_QUOTE_TABLE,
-  MotivationalQuoteSchema,
   MotivationalQuote,
+  MotivationalQuoteSchema,
+  MOTIVATIONAL_QUOTE_TABLE,
 };

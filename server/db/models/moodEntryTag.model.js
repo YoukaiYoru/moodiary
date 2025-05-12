@@ -4,20 +4,18 @@ const MOOD_ENTRY_TAG_TABLE = 'mood_entry_tags';
 
 const MoodEntryTagSchema = {
   entry_id: {
-    allowNull: false,
-    primaryKey: true,
     type: DataTypes.INTEGER,
+    primaryKey: true,
   },
   tag_id: {
-    allowNull: false,
-    primaryKey: true,
     type: DataTypes.INTEGER,
+    primaryKey: true,
   },
 };
 
 class MoodEntryTag extends Model {
   static associate() {
-    // No es necesario definir asociaciones aquí
+    // No asociaciones directas aquí, las manejan los modelos principales con belongsToMany
   }
 
   static config(sequelize) {
@@ -30,4 +28,4 @@ class MoodEntryTag extends Model {
   }
 }
 
-module.exports = { MOOD_ENTRY_TAG_TABLE, MoodEntryTagSchema, MoodEntryTag };
+module.exports = { MoodEntryTag, MoodEntryTagSchema, MOOD_ENTRY_TAG_TABLE };

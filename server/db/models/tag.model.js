@@ -1,18 +1,17 @@
-const { Model, DataTypes } = require('sequelize');
+const { Model, DataTypes, Sequelize } = require('sequelize');
 
 const TAG_TABLE = 'tags';
 
 const TagSchema = {
   id: {
-    allowNull: false,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
-    type: DataTypes.INTEGER,
   },
   name: {
+    type: DataTypes.TEXT,
     allowNull: false,
     unique: true,
-    type: DataTypes.TEXT,
   },
 };
 
@@ -36,4 +35,4 @@ class Tag extends Model {
   }
 }
 
-module.exports = { TAG_TABLE, TagSchema, Tag };
+module.exports = { Tag, TagSchema, TAG_TABLE };

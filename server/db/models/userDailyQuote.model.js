@@ -4,29 +4,21 @@ const USER_DAILY_QUOTE_TABLE = 'user_daily_quote';
 
 const UserDailyQuoteSchema = {
   id: {
-    allowNull: false,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
-    type: DataTypes.INTEGER,
   },
   user_id: {
-    allowNull: false,
     type: DataTypes.STRING,
-    references: {
-      model: 'user_profiles',
-      key: 'user_id',
-    },
-    onDelete: 'CASCADE',
-  },
-
-  quote_id: {
     allowNull: false,
+  },
+  quote_id: {
     type: DataTypes.INTEGER,
+    allowNull: false,
   },
   quote_date: {
-    allowNull: false,
     type: DataTypes.DATEONLY,
-    defaultValue: Sequelize.literal('CURRENT_DATE'),
+    defaultValue: DataTypes.NOW,
   },
 };
 
@@ -60,7 +52,7 @@ class UserDailyQuote extends Model {
 }
 
 module.exports = {
-  USER_DAILY_QUOTE_TABLE,
-  UserDailyQuoteSchema,
   UserDailyQuote,
+  UserDailyQuoteSchema,
+  USER_DAILY_QUOTE_TABLE,
 };
