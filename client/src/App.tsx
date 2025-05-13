@@ -1,11 +1,9 @@
-import MainNav from "./common/MainNav";
-import MainBanner from "./home/MainBanner";
+import AppRoutes from "./router/AppRoutes"
 
 function App() {
   return (
     <>
-      <MainNav />
-      <MainBanner />
+      <AppRoutes />
     </>
   )
 }

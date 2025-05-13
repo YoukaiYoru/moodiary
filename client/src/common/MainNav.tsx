@@ -1,5 +1,5 @@
 // import { MdMenu } from "react-icons/md";
-import { FaRegUser } from "react-icons/fa";
+// import { FaRegUser } from "react-icons/fa";
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 
 const NavBarMenu = [
