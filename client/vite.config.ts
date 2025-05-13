@@ -11,4 +11,14 @@ export default defineConfig({
       "@ui": "/src/components/ui",
     },
   },
+  server: {
+    host: true,
+    proxy: {
+      "/api/v1": {
+        target: "http://localhost:5001", // backend
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

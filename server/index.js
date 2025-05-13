@@ -21,7 +21,12 @@ app.use(express.json());
 const port = process.env.PORT || 3000;
 
 // CORS Configuration
-const whitelist = ['http://localhost:5001', 'https://myapp.com'];
+const whitelist = [
+  'http://localhost:5001',
+  'https://myapp.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || whitelist.includes(origin)) {

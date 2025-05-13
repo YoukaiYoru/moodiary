@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children }: Props) {
   if (!isLoaded) {
     return (
       <div>
-        <Loader />
+        <Loader isLoaded={isLoaded} />
       </div>
     );
   }
