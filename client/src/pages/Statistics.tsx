@@ -26,9 +26,12 @@ const chartConfig = {
   surprise: { label: "Surprise", color: "var(--chart-5)" },
 };
 
+const phrase =
+  "Concentra todos tus pensamientos sobre el trabajo en una mano. Los rayos del sol no queman hasta que hacen foco";
+
 export default function Statistics() {
   return (
-    <div className="max-w-7xl mx-auto p-4 space-y-6">
+    <div className=" space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 text-center">
         Mira tu evolución emocional
       </h1>
@@ -36,9 +39,9 @@ export default function Statistics() {
       {/* Header Row with Title + Image */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
         {/* Text (spans 2 on larger screens) */}
-        <div className="sm:col-span-2">
-          <h2 className="text-2xl font-semibold text-red-600 text-center sm:text-left">
-            Hi
+        <div className="sm:col-span-2 flex justify-center sm:justify-start items-center border border-red-500 h-full rounded-2xl">
+          <h2 className="text-2xl font-semibold text-red-600 text-center m-4">
+            {phrase}
           </h2>
         </div>
 
@@ -64,7 +67,7 @@ export default function Statistics() {
             referenceDate="2024-06-30"
           />
         </div>
-        <div className="w-full lg:w-1/4 flex flex-col">
+        <div className="w-full lg:w-1/4 flex flex-col border border-red-500 rounded-2xl p-4 shadow-sm">
           <div className="flex-1">
             <Calendar />
           </div>
