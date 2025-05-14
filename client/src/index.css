@@ -19,7 +19,16 @@
   }
 }
 
+@theme {
+  --font-playwrite: "Playwrite DK Loopet", sans-serif;
+  --font-dosis: "Dosis", sans-serif;
+}
+
 @custom-variant dark (&:is(.dark *));
+
+.emotion-button {
+  @apply text-5xl m-4 hover:text-shadow-lg border-none transform transition hover:scale-130 duration-200 text-shadow-lg cursor-pointer;
+}
 
 :root {
   --background: oklch(1 0 0);
@@ -135,6 +144,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
