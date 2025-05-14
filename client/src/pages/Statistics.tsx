@@ -1,29 +1,75 @@
 import ChartEmotion from "@/components/ChartEmotion";
+import { Calendar } from "@ui/calendar";
 const chartData = [
-  { date: "2024-04-01", ventas: 222, visitas: 150 },
-  { date: "2024-04-15", ventas: 120, visitas: 170 },
-  { date: "2024-05-01", ventas: 165, visitas: 220 },
-  { date: "2024-05-15", ventas: 473, visitas: 380 },
-  { date: "2024-06-01", ventas: 178, visitas: 200 },
-  { date: "2024-06-15", ventas: 307, visitas: 350 },
-  { date: "2024-06-30", ventas: 446, visitas: 400 },
+  {
+    date: "2024-04-01",
+    joy: 50,
+    sadness: 30,
+  },
+  {
+    date: "2024-04-02",
+    joy: 60,
+    sadness: 25,
+  },
 ];
+
+const imageURL = "/src/assets/happy.webp"; // URL de la imagen del emoji
+
+// Fechas con emojis
+
+const chartConfig = {
+  visitors: { label: "Visitors" },
+  joy: { label: "Joy", color: "var(--chart-1)" },
+  sadness: { label: "Sadness", color: "var(--chart-2)" },
+  anger: { label: "Anger", color: "var(--chart-3)" },
+  fear: { label: "Fear", color: "var(--chart-4)" },
+  surprise: { label: "Surprise", color: "var(--chart-5)" },
+};
 
 export default function Statistics() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">
-        Ejemplo de Gráfico de Área Reutilizable
+    <div className="max-w-7xl mx-auto p-4 space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900 text-center">
+        Mira tu evolución emocional
       </h1>
 
-      <ChartEmotion
-        data={chartData}
-        title="Análisis de Rendimiento"
-        description="Ventas y visitas durante los últimos 3 meses"
-        dataKeys={["ventas", "visitas"]}
-        colors={["hsl(var(--primary))", "hsl(var(--secondary))"]}
-        height={300}
-      />
+      {/* Header Row with Title + Image */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+        {/* Text (spans 2 on larger screens) */}
+        <div className="sm:col-span-2">
+          <h2 className="text-2xl font-semibold text-red-600 text-center sm:text-left">
+            Hi
+          </h2>
+        </div>
+
+        {/* Image + Label */}
+        <div className="flex flex-col items-center border border-red-500 rounded-2xl p-4 shadow-sm">
+          <img
+            src={imageURL}
+            alt="Example"
+            className="w-20 h-20 object-cover rounded-full mb-2"
+          />
+          <p className="text-sm text-gray-700 text-center">Image label</p>
+        </div>
+      </div>
+
+      {/* Chart + Calendar Section */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 max-h-[500px] overflow-auto">
+          <ChartEmotion
+            title="Emociones vs Tiempo"
+            description="Mira lo hermoso que es tu evolución emocional"
+            data={chartData}
+            config={chartConfig}
+            referenceDate="2024-06-30"
+          />
+        </div>
+        <div className="w-full lg:w-1/4 flex flex-col">
+          <div className="flex-1">
+            <Calendar />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

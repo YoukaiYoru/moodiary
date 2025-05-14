@@ -19,9 +19,6 @@
   }
 }
 
-@theme {
-  --font-playwrite: "Playwrite DK Loopet", sans-serif;
-}
 @custom-variant dark (&:is(.dark *));
 
 :root {
