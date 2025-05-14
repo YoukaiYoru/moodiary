@@ -38,21 +38,82 @@ const mainItems = [
 ];
 
 // Subitems del collapsable "Notes"
+// const notesItems = [
+//   {
+//     title: "Note 1",
+//     url: "/dashboard/notes/note1",
+//     icon: FileText,
+//   },
+//   {
+//     title: "Note 2",
+//     url: "/dashboard/notes/note2",
+//     icon: FileText,
+//   },
+//   {
+//     title: "Note 3",
+//     url: "/dashboard/notes/note3",
+//     icon: FileText,
+//   },
+// ];
+
+// Ejemplo de datos que podrías recibir de una API
 const notesItems = [
   {
-    title: "Note 1",
-    url: "/dashboard/notes/note1",
-    icon: FileText,
+    date: "2023-10-01",
+    notes: [
+      {
+        id: 1,
+        title: "Meeting Notes",
+        content: "Discussed project milestones and deadlines.",
+        createdAt: "2023-10-01T10:00:00Z",
+      },
+      {
+        id: 2,
+        title: "Shopping List",
+        content: "Milk, Bread, Eggs, Butter.",
+        createdAt: "2023-10-01T12:30:00Z",
+      },
+      {
+        id: 3,
+        title: "Workout Plan",
+        content: "Monday: Chest, Tuesday: Back, Wednesday: Legs.",
+        createdAt: "2023-10-01T15:45:00Z",
+      },
+    ],
   },
   {
-    title: "Note 2",
-    url: "/dashboard/notes/note2",
-    icon: FileText,
+    date: "2023-10-02",
+    notes: [
+      {
+        id: 4,
+        title: "Daily Journal",
+        content: "Reflected on the day's events and emotions.",
+        createdAt: "2023-10-02T09:00:00Z",
+      },
+      {
+        id: 5,
+        title: "Grocery List",
+        content: "Tomatoes, Onions, Garlic, Chicken.",
+        createdAt: "2023-10-02T11:15:00Z",
+      },
+    ],
   },
   {
-    title: "Note 3",
-    url: "/dashboard/notes/note3",
-    icon: FileText,
+    date: "2023-10-03",
+    notes: [
+      {
+        id: 6,
+        title: "Project Ideas",
+        content: "Brainstormed ideas for the new app.",
+        createdAt: "2023-10-03T14:00:00Z",
+      },
+      {
+        id: 7,
+        title: "Travel Itinerary",
+        content: "Planned trip to the mountains for the weekend.",
+        createdAt: "2023-10-03T16:30:00Z",
+      },
+    ],
   },
 ];
 
@@ -95,19 +156,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {notesItems.map((note) => (
-                        <SidebarMenuSubItem key={note.url}>
+                      {notesItems.map((group) => (
+                        <SidebarMenuSubItem key={group.date}>
                           <SidebarMenuButton asChild>
                             <NavLink
-                              to={note.url}
+                              to={`/dashboard/notes/${group.date}`}
                               className={({ isActive }) =>
                                 isActive
                                   ? "text-primary font-semibold"
                                   : "text-muted-foreground"
                               }
                             >
-                              <note.icon className="mr-2 h-4 w-4" />
-                              {note.title}
+                              <FileText className="mr-2 h-4 w-4" />
+                              {group.date}
                             </NavLink>
                           </SidebarMenuButton>
                         </SidebarMenuSubItem>
