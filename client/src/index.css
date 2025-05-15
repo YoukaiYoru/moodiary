@@ -26,8 +26,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.emotion-button {
-  @apply text-5xl m-4 hover:text-shadow-lg border-none transform transition hover:scale-130 duration-200 text-shadow-lg cursor-pointer;
+.emoji-button {
+  @apply text-5xl m-4 hover:text-shadow-lg border-none rounded-[50%] transform transition hover:scale-130 duration-200 text-shadow-lg cursor-pointer;
 }
 
 :root {

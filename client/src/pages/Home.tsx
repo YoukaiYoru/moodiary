@@ -38,7 +38,7 @@ function Home() {
                     Registra cómo te sientes en cualquier momento del día y empieza a entender mejor tus emociones. Reflexiona, crece y cuida de ti mismo con solo unos minutos al día.
                     Tu bienestar emocional importa, y aquí tienes un espacio seguro para expresarlo.
                 </p>
-                <SignInButton forceRedirectUrl="/dashboard" className="bg-amber-400 font-dosis text-center text-2xl px-4 py-3 mt-5 mb-1.5 rounded-2xl transform transition hover:scale-110 duration-200 cursor-pointer">
+                <SignInButton mode="modal" forceRedirectUrl="/dashboard" className="bg-amber-400 font-dosis text-center text-2xl px-4 py-3 mt-5 mb-1.5 rounded-2xl transform transition hover:scale-110 duration-200 cursor-pointer">
                     Iniciar Sesión
                 </SignInButton>
             </div>
