@@ -14,13 +14,20 @@ const {
   boomErrorHandler,
   sequelizeErrorHandler,
 } = require('./middlewares/error.handler');
+const webHookRouter = require('./routes/webHook.router');
+
+const sequelize = require('./libs/sequelize'); // Ajusta la ruta según tu estructura
 
 const app = express();
+
+//Webhook de Clerk para actualizar usuarios
+app.use('/clerk/webhook', webHookRouter);
+
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-// CORS Configuration
+// Configuración CORS
 const whitelist = ['http://localhost:5001', 'https://myapp.com'];
 const corsOptions = {
   origin: (origin, callback) => {
@@ -34,19 +41,27 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Clerk Middleware with options
-app.use(clerkMiddleware());
+// Clerk Middleware
 
-// Your existing routes
+// Tus rutas (incluyendo la ruta webhook en routes/webHook.router.js)
 routerApi(app);
 
-// Error handling middlewares
+// Middlewares para manejo de errores
+app.use(clerkMiddleware());
 app.use(logErrors);
 app.use(boomErrorHandler);
 app.use(sequelizeErrorHandler);
 app.use(errorHandler);
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+// Iniciar servidor (solo DB y servidor, sin syncClerkUsers)
+(async () => {
+  try {
+    console.log('✅ Conexión a la base de datos establecida.');
+
+    app.listen(port, () => {
+      console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
+    });
+  } catch (err) {
+    console.error('❌ Error al iniciar la app:', err);
+  }
+})();

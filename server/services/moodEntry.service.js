@@ -24,6 +24,25 @@ class MoodEntryService {
     }
   }
 
+  async findByMood(mood) {
+    try {
+      const moodEntries = await models.MoodEntry.findOne({
+        include: {
+          model: models.MoodType,
+          as: 'moodType',
+          where: {
+            name: {
+              [Op.eq]: mood,
+            },
+          },
+        },
+      });
+      return moodEntries;
+    } catch (error) {
+      throw Boom.badImplementation('Error fetching mood entries', error);
+    }
+  }
+
   async find(filters = {}) {
     try {
       const moodEntries = await models.MoodEntry.findAll({

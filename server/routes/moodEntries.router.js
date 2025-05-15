@@ -1,9 +1,19 @@
 const express = require('express');
 const MoodEntryService = require('../services/moodEntry.service');
+const MoodTypeService = require('../services/moodType.service');
 const { redirectIfUnauthenticated } = require('../middlewares/auth.handler');
+const {
+  createMoodEntrySchema,
+  getMoodEntrySchema,
+  getOneMoodEntrySchema,
+} = require('../schema/moodEntry.schema');
+const validatorHandler = require('../middlewares/validator.handler');
 
 const router = express.Router();
+
+//Services
 const service = new MoodEntryService();
+const moodTypeService = new MoodTypeService();
 
 // Rutas para manejar moods/emociones
 router.get('/', (req, res) => {
@@ -15,15 +25,19 @@ router.get('/1', redirectIfUnauthenticated, (req, res) => {
 });
 
 // GET /entries/:userId → Obtener todas las entradas de un usuario
-router.get('/:userId', async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    const entries = await service.find({ user_id: userId });
-    res.json(entries);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get(
+  '/:userId',
+  validatorHandler(getMoodEntrySchema),
+  async (req, res, next) => {
+    try {
+      const { userId } = req.params;
+      const entries = await service.find({ user_id: userId });
+      res.json(entries);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // GET /entries/:userId/:entryId → Obtener una entrada específica
 router.get('/:userId/:entryId', async (req, res, next) => {
@@ -57,16 +71,33 @@ router.get('/:userId/latest', async (req, res, next) => {
 });
 
 // POST /entries/:userId → Crear entrada (día, estado, nota)
-router.post('/:userId', async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    const data = { ...req.body, user_id: userId };
-    const newEntry = await service.create(data);
-    res.status(201).json(newEntry);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post(
+  '/:userId',
+  validatorHandler(createMoodEntrySchema),
+  async (req, res, next) => {
+    try {
+      const { userId } = req.params;
+      // Buscar el ID correspondiente al nombre del mood
+      const moodType = await moodTypeService.findByName(req.body.mood);
+
+      if (!moodType) {
+        return res
+          .status(400)
+          .json({ error: 'Tipo de estado de ánimo no válido' });
+      }
+      const data = {
+        mood_type_id: moodType.id,
+        user_id: userId, // Clerk user ID
+        created_at: req.body.date,
+        note: req.body.note,
+      };
+      const newEntry = await service.create(data);
+      res.status(201).json(newEntry);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // PUT /entries/:userId/:entryId → Editar entrada (nota o estado emocional)
 router.put('/:userId/:entryId', async (req, res, next) => {
