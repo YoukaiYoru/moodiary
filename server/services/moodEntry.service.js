@@ -23,6 +23,20 @@ class MoodEntryService {
       throw Boom.badImplementation('Error fetching mood entry', error);
     }
   }
+  async findOneByUserId(userId, id) {
+    const moodEntry = await models.MoodEntry.findOne({
+      where: {
+        user_id: userId,
+        id,
+      },
+    });
+
+    if (!moodEntry) {
+      throw Boom.notFound('Mood entry not found');
+    }
+
+    return moodEntry;
+  }
 
   async findByMood(mood) {
     try {
@@ -72,6 +86,41 @@ class MoodEntryService {
     } catch (error) {
       throw Boom.badImplementation('Error deleting mood entry', error);
     }
+  }
+  //Custom services
+
+  async getAverageMoodToday(userId) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const entries = await models.MoodEntry.findAll({
+      where: {
+        user_id: userId,
+        created_at: {
+          [Op.between]: [startOfDay, endOfDay],
+        },
+      },
+      include: {
+        model: models.MoodType,
+        as: 'moodType',
+        attributes: ['mood_score'],
+      },
+    });
+
+    if (entries.length === 0) {
+      throw Boom.notFound('No hay entradas de estado de ánimo para hoy.');
+    }
+
+    const sum = entries.reduce(
+      (total, entry) => total + entry.moodType.mood_score,
+      0,
+    );
+    const average = sum / entries.length;
+
+    return parseFloat(average.toFixed(2));
   }
 }
 

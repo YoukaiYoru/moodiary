@@ -4,7 +4,7 @@ const { models } = require('../libs/sequelize');
 class UserProfileService {
   // Obtener perfil por user_id de Clerk
   async findByClerkId(userId) {
-    const profile = await models.ProfileUser.findOne({
+    const profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });
 
@@ -39,6 +39,19 @@ class UserProfileService {
     }
 
     await profile.update(changes);
+    return profile;
+  }
+
+  async updateDayMood(userId, mood) {
+    const profile = await models.ProfileUser.findOne({
+      where: { user_id: userId },
+    });
+
+    if (!profile) {
+      throw boom.notFound('Perfil no encontrado');
+    }
+
+    await profile.update({ preferred_mood: mood });
     return profile;
   }
 
