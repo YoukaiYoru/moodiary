@@ -1,29 +1,36 @@
 import ChartEmotion from "@/components/ChartEmotion";
 import { Calendar } from "@ui/calendar";
-const chartData = [
-  {
-    date: "2024-04-01",
-    joy: 50,
-    sadness: 30,
-  },
-  {
-    date: "2024-04-02",
-    joy: 60,
-    sadness: 25,
-  },
-];
+
+//Data de ejemplo para el gráfico
+const chartData = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() - i);
+  date.setHours(
+    Math.floor(Math.random() * 24),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60)
+  );
+
+  return {
+    date: date.toISOString(),
+    Alegría: Math.floor(Math.random() * 100),
+    Tristeza: Math.floor(Math.random() * 100),
+    Calma: Math.floor(Math.random() * 100),
+    Ansiedad: Math.floor(Math.random() * 100),
+    Enojo: Math.floor(Math.random() * 100),
+  };
+});
 
 const imageURL = "/src/assets/happy.webp"; // URL de la imagen del emoji
 
 // Fechas con emojis
 
 const chartConfig = {
-  visitors: { label: "Visitors" },
-  joy: { label: "Joy", color: "var(--chart-1)" },
-  sadness: { label: "Sadness", color: "var(--chart-2)" },
-  anger: { label: "Anger", color: "var(--chart-3)" },
-  fear: { label: "Fear", color: "var(--chart-4)" },
-  surprise: { label: "Surprise", color: "var(--chart-5)" },
+  Alegría: { label: "Alegría", color: "var(--chart-1)" },
+  Calma: { label: "Calma", color: "var(--chart-2)" },
+  Ansiedad: { label: "Ansiedad", color: "var(--chart-3)" },
+  Tristeza: { label: "Tristeza", color: "var(--chart-4)" },
+  Enojo: { label: "Enojo", color: "var(--chart-5)" },
 };
 
 const phrase =
@@ -64,7 +71,7 @@ export default function Statistics() {
             description="Mira lo hermoso que es tu evolución emocional"
             data={chartData}
             config={chartConfig}
-            referenceDate="2024-06-30"
+            referenceDate={new Date().toISOString().split("T")[0]}
           />
         </div>
         <div className="w-full lg:w-1/4 flex flex-col border border-red-500 rounded-2xl p-4 shadow-sm">
