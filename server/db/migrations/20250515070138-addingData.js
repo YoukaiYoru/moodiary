@@ -12,11 +12,11 @@ module.exports = {
     await queryInterface.bulkInsert(
       'mood_types',
       [
-        { name: 'Alegría', mood_score: 5 },
-        { name: 'Calma', mood_score: 4 },
-        { name: 'Ansiedad', mood_score: 2 },
-        { name: 'Tristeza', mood_score: 1 },
-        { name: 'Enojo', mood_score: 2 },
+        { name: 'alegria', mood_score: 5 },
+        { name: 'calma', mood_score: 4 },
+        { name: 'ansiedad', mood_score: 2 },
+        { name: 'tristeza', mood_score: 1 },
+        { name: 'enojo', mood_score: 2 },
       ],
       {},
     );
@@ -32,7 +32,7 @@ module.exports = {
     await queryInterface.bulkDelete(
       'mood_types',
       {
-        name: ['Alegría', 'Calma', 'Ansiedad', 'Tristeza', 'Enojo'],
+        name: ['alegria', 'calma', 'ansiedad', 'tristeza', 'enojo'],
       },
       {},
     );
