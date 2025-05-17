@@ -1,90 +1,136 @@
 const express = require('express');
 const MoodEntryService = require('../services/moodEntry.service');
-const { redirectIfUnauthenticated } = require('../middlewares/auth.handler');
+const MoodTypeService = require('../services/moodType.service');
+const {
+  createMoodEntrySchema,
+  getMoodEntrySchema,
+  getOneMoodEntrySchema,
+} = require('../schema/moodEntry.schema');
+const validatorHandler = require('../middlewares/validator.handler');
+const { requireAuth, getAuth } = require('@clerk/express');
 
 const router = express.Router();
+
+// Services
 const service = new MoodEntryService();
+const moodTypeService = new MoodTypeService();
 
-// Rutas para manejar moods/emociones
-router.get('/', (req, res) => {
-  res.send('List of moods');
-});
-
-router.get('/1', redirectIfUnauthenticated, (req, res) => {
-  res.send('Details of mood 1');
-});
-
-// GET /entries/:userId → Obtener todas las entradas de un usuario
-router.get('/:userId', async (req, res, next) => {
+// ✅ Obtener una entrada específica por ID (autenticado)
+router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
   try {
-    const { userId } = req.params;
-    const entries = await service.find({ user_id: userId });
-    res.json(entries);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET /entries/:userId/:entryId → Obtener una entrada específica
-router.get('/:userId/:entryId', async (req, res, next) => {
-  try {
+    const { userId } = getAuth(req);
     const { entryId } = req.params;
-    const entry = await service.findOne(entryId);
+    const entry = await service.findOneByUserId(userId, parseInt(entryId));
     res.json(entry);
   } catch (error) {
     next(error);
   }
 });
 
-// GET /entries/:userId/stats → Obtener resumen estadístico de emociones
-router.get('/:userId/stats', async (req, res, next) => {
+// ✅ Obtener promedio de hoy (autenticado)
+router.get('/average/today', requireAuth(), async (req, res, next) => {
   try {
-    // Logic for generating emotion statistics for a user
-    res.status(501).send('Not implemented');
+    const { userId } = getAuth(req);
+    const { average, emoji } = await service.getAverageMoodToday(userId);
+    res.json({ average, emoji });
   } catch (error) {
     next(error);
   }
 });
 
-// GET /entries/:userId/latest → Última entrada del usuario
-router.get('/:userId/latest', async (req, res, next) => {
+// ✅ Crear nueva entrada (autenticado)
+router.post(
+  '/',
+  requireAuth(),
+  validatorHandler(createMoodEntrySchema),
+  async (req, res, next) => {
+    try {
+      const { userId } = getAuth(req);
+      const moodType = await moodTypeService.findByName(req.body.mood);
+      if (!moodType) {
+        return res
+          .status(400)
+          .json({ error: 'Tipo de estado de ánimo no válido' });
+      }
+      const data = {
+        mood_type_id: moodType.id,
+        user_id: userId,
+        created_at: req.body.date,
+        note: req.body.note,
+      };
+      const newEntry = await service.create(data);
+      res.status(201).json(newEntry);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// ✅ Obtener todas las entradas de un usuario
+router.get(
+  '/all',
+  validatorHandler(getMoodEntrySchema),
+  requireAuth(),
+  async (req, res, next) => {
+    try {
+      const { userId } = getAuth(req);
+      const entries = await service.find({ user_id: userId });
+      res.json(entries);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.get('/dates', requireAuth(), async (req, res, next) => {
   try {
-    // Logic for fetching the latest entry for a user
-    res.status(501).send('Not implemented');
+    const { userId } = getAuth(req);
+    const dates = await service.findDistinctDates(userId);
+    res.json(dates);
   } catch (error) {
     next(error);
   }
 });
 
-// POST /entries/:userId → Crear entrada (día, estado, nota)
-router.post('/:userId', async (req, res, next) => {
+// ✅ Obtener resumen estadístico (mock)
+router.get('/chart', requireAuth(), async (req, res, next) => {
   try {
-    const { userId } = req.params;
-    const data = { ...req.body, user_id: userId };
-    const newEntry = await service.create(data);
-    res.status(201).json(newEntry);
+    const { userId } = getAuth(req);
+    const { range = '1d' } = req.query;
+    const data = await service.getChartData(userId, range);
+    res.json(data);
   } catch (error) {
     next(error);
   }
 });
 
-// PUT /entries/:userId/:entryId → Editar entrada (nota o estado emocional)
-router.put('/:userId/:entryId', async (req, res, next) => {
+// ✅ Obtener entradas por fecha
+router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
+  try {
+    const { userId } = getAuth(req);
+    const { isoDate } = req.params;
+    const entries = await service.findByDateFormatted(userId, isoDate);
+    res.json(entries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:entryId', requireAuth(), async (req, res, next) => {
   try {
     const { entryId } = req.params;
-    const data = req.body;
-    const updatedEntry = await service.update(entryId, data);
+    const updatedEntry = await service.update(parseInt(entryId), req.body);
     res.json(updatedEntry);
   } catch (error) {
     next(error);
   }
 });
 
-// DELETE /entries/:userId/:entryId → Eliminar entrada
-router.delete('/:userId/:entryId', async (req, res, next) => {
+// Eliminar entrada específica
+router.delete('/:entryId', requireAuth(), async (req, res, next) => {
   try {
     const { entryId } = req.params;
-    const result = await service.delete(entryId);
+    const result = await service.delete(parseInt(entryId));
     res.json(result);
   } catch (error) {
     next(error);

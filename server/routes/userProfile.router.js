@@ -6,11 +6,21 @@ const router = express.Router();
 const service = new ProfileService();
 
 // GET /api/profile - Obtener el perfil del usuario actual
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const profile = await service.findByClerkId(userId);
     res.json(profile);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/mood', requireAuth(), async (req, res, next) => {
+  try {
+    const { userId } = getAuth(req);
+    const profile = await service.findByClerkId(userId);
+    res.json({ mood: profile.mood });
   } catch (error) {
     next(error);
   }

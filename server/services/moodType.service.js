@@ -13,6 +13,17 @@ class MoodTypeService {
     }
     return moodType;
   }
+  async findByName(name) {
+    const moodType = await models.MoodType.findOne({
+      where: {
+        name,
+      },
+    });
+    if (!moodType) {
+      throw boom.notFound('MoodType not found');
+    }
+    return moodType;
+  }
 
   async create(data) {
     return await models.MoodType.create(data);
