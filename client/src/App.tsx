@@ -5,6 +5,7 @@ import Layout from "./home/Layout";
 import Home from "./pages/Home";
 import HomeLogin from "./pages/HomeLogin";
 import Statistics from "./pages/Statistics";
+import MoodNotes from "./pages/MoodNotes";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       >
         <Route index element={<HomeLogin />} />
         <Route path="stats" element={<Statistics />} />
+        <Route path="notes/:id" element={<MoodNotes />} />
       </Route>
     </Routes>
   );

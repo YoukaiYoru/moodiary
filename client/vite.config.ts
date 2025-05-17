@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       "@": "/src",
       "@ui": "/src/components/ui",
+      // '@components': path.resolve(__dirname, './src/components'),
     },
   },
   server: {

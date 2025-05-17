@@ -1,3 +1,4 @@
+// components/ResponsiveAreaChart.tsx
 "use client";
 
 import * as React from "react";
@@ -26,122 +27,85 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface DataPoint {
+type DataItem = {
   date: string;
-  [key: string]: string | number;
-}
+  [key: string]: string | number | boolean | null | undefined;
+};
 
-interface TimeRangeOption {
-  value: string;
-  label: string;
-  days: number;
-}
-
-interface AreaChartProps {
-  data: DataPoint[];
-  title?: string;
+type Props = {
+  title: string;
   description?: string;
-  height?: number;
-  dataKeys: string[];
-  colors?: string[];
-  timeRangeOptions?: TimeRangeOption[];
-  defaultTimeRange?: string;
-}
+  data: DataItem[];
+  config: ChartConfig;
+  referenceDate?: string;
+};
+
+const TIME_RANGES = [
+  { value: "1d", label: "Last 24 hours", days: 1 },
+  { value: "7d", label: "Last 7 days", days: 7 },
+  { value: "30d", label: "Last 30 days", days: 30 },
+] as const;
 
 export default function ChartEmotion({
+  title,
+  description,
   data,
-  title = "Area Chart",
-  description = "Interactive area chart",
-  height = 250,
-  dataKeys = ["value"],
-  colors = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-  ],
-  timeRangeOptions = [
-    { value: "90d", label: "Last 3 months", days: 90 },
-    { value: "30d", label: "Last 30 days", days: 30 },
-    { value: "7d", label: "Last 7 days", days: 7 },
-  ],
-  defaultTimeRange = "90d",
-}: AreaChartProps) {
-  const [timeRange, setTimeRange] = React.useState(defaultTimeRange);
+  config,
+  referenceDate = new Date().toISOString().split("T")[0],
+}: Props) {
+  const [timeRange, setTimeRange] =
+    React.useState<(typeof TIME_RANGES)[number]["value"]>("1d");
 
-  // Create chart config dynamically based on dataKeys
-  const chartConfig: ChartConfig = React.useMemo(() => {
-    const config: ChartConfig = {};
-
-    dataKeys.forEach((key, index) => {
-      config[key] = {
-        label: key.charAt(0).toUpperCase() + key.slice(1),
-        color: colors[index % colors.length],
-      };
-    });
-
-    return config;
-  }, [dataKeys, colors]);
-
-  // Filter data based on selected time range
   const filteredData = React.useMemo(() => {
-    const selectedOption = timeRangeOptions.find(
-      (option) => option.value === timeRange
-    );
-    if (!selectedOption) return data;
-
-    const daysToSubtract = selectedOption.days;
-    const referenceDate = new Date(data[data.length - 1]?.date || new Date());
-    const startDate = new Date(referenceDate);
-    startDate.setDate(startDate.getDate() - daysToSubtract);
+    const refDate = new Date(referenceDate);
+    const range =
+      TIME_RANGES.find((r) => r.value === timeRange) ?? TIME_RANGES[2];
+    const startDate = new Date(refDate);
+    startDate.setDate(refDate.getDate() - range.days);
 
     return data.filter((item) => {
-      const date = new Date(item.date);
-      return date >= startDate;
+      const itemDate = new Date(item.date);
+      console.log("Parsed item date:", itemDate); // Debugging log
+      return itemDate >= startDate && itemDate <= refDate;
     });
-  }, [data, timeRange, timeRangeOptions]);
+  }, [data, timeRange, referenceDate]);
+
+  const formatDate = (value: string) => {
+    const date = new Date(value);
+    return timeRange === "1d"
+      ? date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
-    <Card>
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-        <div className="grid flex-1 gap-1 text-center sm:text-left">
+    <Card className="rounded-2xl border border-red-500 shadow-md">
+      <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-2 py-5 border-b">
+        <div className="text-center sm:text-left">
           <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
+          {description && <CardDescription>{description}</CardDescription>}
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger
-            className="w-[160px] rounded-lg sm:ml-auto"
-            aria-label="Select time range"
-          >
-            <SelectValue
-              placeholder={
-                timeRangeOptions.find(
-                  (option) => option.value === defaultTimeRange
-                )?.label
-              }
-            />
+        <Select
+          value={timeRange}
+          onValueChange={(value) => setTimeRange(value as typeof timeRange)}
+        >
+          <SelectTrigger className="w-[160px] rounded-lg">
+            <SelectValue placeholder="Select range" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            {timeRangeOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-                className="rounded-lg"
-              >
-                {option.label}
+            {TIME_RANGES.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </CardHeader>
+
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-          style={{ height }}
-        >
+        <ChartContainer config={config} className="h-[250px] w-full">
           <AreaChart data={filteredData}>
             <defs>
-              {dataKeys.map((key) => (
+              {Object.keys(config).map((key) => (
                 <linearGradient
                   key={key}
                   id={`fill${key}`}
@@ -163,45 +127,38 @@ export default function ChartEmotion({
                 </linearGradient>
               ))}
             </defs>
+
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
-              }}
+              minTickGap={timeRange === "1d" ? 16 : 32}
+              tickFormatter={formatDate}
             />
+
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }}
+                  labelFormatter={formatDate}
                   indicator="dot"
                 />
               }
             />
-            {dataKeys.map((key) => (
+
+            {Object.keys(config).map((key) => (
               <Area
                 key={key}
                 dataKey={key}
                 type="natural"
-                fill={`url(#fill${key})`}
                 stroke={`var(--color-${key})`}
+                fill={`url(#fill${key})`}
                 stackId="a"
               />
             ))}
+
             <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>
         </ChartContainer>
