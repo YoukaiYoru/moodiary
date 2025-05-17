@@ -20,12 +20,7 @@ function routerApi(app) {
   router.use('/tags', tagsRouter); // No protegida
   router.use('/webhook', webhookRouter); // No protegida
   // Rutas protegidas (requieren autenticación)
-  router.use(
-    '/moods',
-    redirectIfUnauthenticated,
-    requireAuth(),
-    moodEntriesRouter,
-  ); // Protegida
+  router.use('/moods', requireAuth(), moodEntriesRouter); // Protegida
   router.use('/profile', requireAuth(), userProfileRouter); // Protegida
   router.use('/moodEntryTags', requireAuth(), moodEntryTagsRouter); // Protegida
   router.use('/userDailyQuotes', requireAuth(), userDailyQuotesRouter); // Protegida
