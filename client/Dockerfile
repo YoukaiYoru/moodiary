@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # Etapa de producción
-FROM node:18
+FROM node:20
 
 WORKDIR /app
 
