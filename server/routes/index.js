@@ -23,7 +23,7 @@ function routerApi(app) {
   // Rutas protegidas (requieren autenticación)
   router.use(
     '/moods',
-    redirectIfUnauthenticated(),
+    redirectIfUnauthenticated,
     requireAuth(),
     moodEntriesRouter,
   ); // Protegida
