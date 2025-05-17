@@ -1,8 +1,11 @@
 const express = require('express');
 const MotivationalQuoteService = require('../services/motivationalQuote.service');
+const MoodEntryService = require('../services/moodEntry.service');
 
 const router = express.Router();
 const service = new MotivationalQuoteService();
+const moodEntryService = new MoodEntryService();
+const { requireAuth, getAuth } = require('@clerk/express');
 
 // Route to list all motivational quotes
 router.get('/', async (req, res, next) => {
@@ -11,6 +14,22 @@ router.get('/', async (req, res, next) => {
     res.json(quotes);
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/today', requireAuth(), async (req, res) => {
+  try {
+    const { userId } = getAuth(req);
+    const result = await service.getMotivationalQuoteForToday(
+      userId,
+      moodEntryService,
+    );
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ message: 'Server error retrieving motivational quote.' });
   }
 });
 

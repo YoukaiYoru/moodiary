@@ -12,11 +12,11 @@ module.exports = {
     await queryInterface.bulkInsert(
       'mood_types',
       [
-        { name: 'alegria', mood_score: 5 },
-        { name: 'calma', mood_score: 4 },
-        { name: 'ansiedad', mood_score: 2 },
-        { name: 'tristeza', mood_score: 1 },
-        { name: 'enojo', mood_score: 2 },
+        { name: 'Alegría', mood_score: 5, emoji: '😄' },
+        { name: 'Calma', mood_score: 4, emoji: '😌' },
+        { name: 'Ansiedad', mood_score: 2, emoji: '😰' },
+        { name: 'Tristeza', mood_score: 1, emoji: '😢' },
+        { name: 'Enojo', mood_score: 1, emoji: '😠' },
       ],
       {},
     );

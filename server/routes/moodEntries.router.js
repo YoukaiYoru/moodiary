@@ -31,8 +31,8 @@ router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
 router.get('/average/today', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const averageMood = await service.getAverageMoodToday(userId);
-    res.json({ averageMood });
+    const { average, emoji } = await service.getAverageMoodToday(userId);
+    res.json({ average, emoji });
   } catch (error) {
     next(error);
   }
@@ -68,11 +68,12 @@ router.post(
 
 // ✅ Obtener todas las entradas de un usuario
 router.get(
-  '/user/:userId',
+  '/all',
   validatorHandler(getMoodEntrySchema),
+  requireAuth(),
   async (req, res, next) => {
     try {
-      const { userId } = req.params;
+      const { userId } = getAuth(req);
       const entries = await service.find({ user_id: userId });
       res.json(entries);
     } catch (error) {
@@ -81,26 +82,41 @@ router.get(
   },
 );
 
+router.get('/dates', requireAuth(), async (req, res, next) => {
+  try {
+    const { userId } = getAuth(req);
+    const dates = await service.findDistinctDates(userId);
+    res.json(dates);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ✅ Obtener resumen estadístico (mock)
-router.get('/user/:userId/stats', async (req, res, next) => {
+router.get('/chart', requireAuth(), async (req, res, next) => {
   try {
-    res.status(501).send('Not implemented');
+    const { userId } = getAuth(req);
+    const { range = '1d' } = req.query;
+    const data = await service.getChartData(userId, range);
+    res.json(data);
   } catch (error) {
     next(error);
   }
 });
 
-// ✅ Obtener última entrada (mock)
-router.get('/user/:userId/latest', async (req, res, next) => {
+// ✅ Obtener entradas por fecha
+router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   try {
-    res.status(501).send('Not implemented');
+    const { userId } = getAuth(req);
+    const { isoDate } = req.params;
+    const entries = await service.findByDateFormatted(userId, isoDate);
+    res.json(entries);
   } catch (error) {
     next(error);
   }
 });
 
-// ✅ Editar entrada
-router.put('/user/:userId/:entryId', async (req, res, next) => {
+router.put('/:entryId', requireAuth(), async (req, res, next) => {
   try {
     const { entryId } = req.params;
     const updatedEntry = await service.update(parseInt(entryId), req.body);
@@ -110,8 +126,8 @@ router.put('/user/:userId/:entryId', async (req, res, next) => {
   }
 });
 
-// ✅ Eliminar entrada
-router.delete('/user/:userId/:entryId', async (req, res, next) => {
+// Eliminar entrada específica
+router.delete('/:entryId', requireAuth(), async (req, res, next) => {
   try {
     const { entryId } = req.params;
     const result = await service.delete(parseInt(entryId));

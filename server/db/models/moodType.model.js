@@ -21,6 +21,10 @@ const MoodTypeSchema = {
       max: 5,
     },
   },
+  emoji: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 };
 
 class MoodType extends Model {
