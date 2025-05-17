@@ -1,6 +1,5 @@
 const express = require('express');
 const { requireAuth } = require('@clerk/express');
-const redirectIfUnauthenticated = require('../middlewares/auth.handler');
 
 const moodEntriesRouter = require('./moodEntries.router');
 const userProfileRouter = require('./userProfile.router');
