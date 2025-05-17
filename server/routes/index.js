@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('@clerk/express');
+const redirectIfUnauthenticated = require('../middlewares/auth.handler');
 
 const moodEntriesRouter = require('./moodEntries.router');
 const userProfileRouter = require('./userProfile.router');
@@ -20,7 +21,12 @@ function routerApi(app) {
   router.use('/tags', tagsRouter); // No protegida
   router.use('/webhook', webhookRouter); // No protegida
   // Rutas protegidas (requieren autenticación)
-  router.use('/moods', requireAuth(), moodEntriesRouter); // Protegida
+  router.use(
+    '/moods',
+    redirectIfUnauthenticated(),
+    requireAuth(),
+    moodEntriesRouter,
+  ); // Protegida
   router.use('/profile', requireAuth(), userProfileRouter); // Protegida
   router.use('/moodEntryTags', requireAuth(), moodEntryTagsRouter); // Protegida
   router.use('/userDailyQuotes', requireAuth(), userDailyQuotesRouter); // Protegida
