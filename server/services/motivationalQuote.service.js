@@ -38,9 +38,8 @@ class MotivationalQuoteService {
         message: 'Unable to calculate mood average.',
       };
     }
-    const roundedMood = Math.round(averageMood || 3);
+    const roundedMood = Math.round(averageMood);
     // default neutro si es 0
-    console.log('averageMood', averageMood, 'roundedMood', roundedMood);
 
     const randomFrase = await models.MotivationalQuote.findOne({
       where: { mood_score_target: roundedMood },
@@ -50,7 +49,8 @@ class MotivationalQuoteService {
     if (!randomFrase) {
       return {
         mood_score: roundedMood,
-        message: 'No motivational quote found for this mood.',
+        message:
+          'No hay frases por ahora, agrega más notas para ver más frases',
       };
     }
 
