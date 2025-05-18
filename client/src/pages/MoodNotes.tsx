@@ -24,10 +24,13 @@ export default function MoodNotes() {
       setLoading(true);
       try {
         const token = await getToken();
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Ej: "America/Lima"
+
         const response = await api.get(`/moods/entries/${dateParam}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          params: { timezone }, // Enviar zona horaria al backend
         });
 
         type ApiNote = {
@@ -36,23 +39,36 @@ export default function MoodNotes() {
           text: string;
         };
 
-        const adaptedNotes: Note[] = (response.data as ApiNote[]).map(
-          (item) => {
-            const date = new Date(item.timestamp);
-            const dateStr = date.toLocaleDateString(navigator.language); // Ej: "18/5/2025"
-            const timeStr = date.toLocaleTimeString(navigator.language, {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false, // Usa formato 24h
-            });
+        const notes = response.data as ApiNote[];
 
-            return {
-              hour: `${dateStr} ${timeStr}`, // ej: "18/5/2025 23:15"
-              emotion: item.emotion,
-              text: item.text,
-            };
-          }
-        );
+        // Ordenar primero por hora (más reciente primero) en la zona horaria del usuario
+        const sorted = notes.sort((a, b) => {
+          const aDate = new Date(a.timestamp).toLocaleString("en-US", {
+            timeZone: timezone,
+          });
+          const bDate = new Date(b.timestamp).toLocaleString("en-US", {
+            timeZone: timezone,
+          });
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        });
+
+        // Adaptar los datos
+        const adaptedNotes: Note[] = sorted.map((item) => {
+          const date = new Date(item.timestamp);
+
+          const timeStr = date.toLocaleTimeString(navigator.language, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: timezone,
+          });
+
+          return {
+            hour: timeStr, // Solo hora, ej: "23:54"
+            emotion: item.emotion,
+            text: item.text,
+          };
+        });
 
         setNotes(adaptedNotes);
       } catch (error) {

@@ -65,10 +65,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         },
       });
 
-      // Agrupar por fecha local
+      // Detectar la zona horaria del cliente automáticamente
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       interface MoodItem {
         created_at: string;
-        // Add other properties if needed
       }
 
       interface GroupedNotes {
@@ -78,19 +79,23 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       const grouped: GroupedNotes = (response.data as MoodItem[]).reduce(
         (acc: GroupedNotes, item: MoodItem) => {
           const localDate = new Date(item.created_at).toLocaleDateString(
-            "en-CA"
-          ); // YYYY-MM-DD
+            "en-CA",
+            {
+              timeZone: userTimeZone,
+            }
+          ); // ej: "2025-05-17"
+
           if (!acc[localDate]) acc[localDate] = [];
           acc[localDate].push(item);
+
           return acc;
         },
         {}
       );
 
-      // Si solo necesitas las fechas únicas en formato YYYY-MM-DD
       const localDates = Object.keys(grouped);
 
-      setNoteItems(localDates.map((date) => ({ date }))); // o setNoteItems(grouped) si necesitas los items agrupados
+      setNoteItems(localDates.map((date) => ({ date }))); // O `grouped` si necesitas los items
     } catch (error) {
       console.error("Error fetching notes:", error);
     }

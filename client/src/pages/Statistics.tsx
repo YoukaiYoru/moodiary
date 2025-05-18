@@ -31,12 +31,53 @@ export default function Statistics() {
         const token = await getToken();
         if (!token) throw new Error("No token disponible");
 
-        const clientDateISO = new Date().toISOString();
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const now = new Date();
+
+        let dateFrom: Date;
+
+        if (timeRange === "1d") {
+          // Desde 00:00:00 hasta 23:59:59 del día actual, en hora local
+          dateFrom = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            0,
+            0,
+            0,
+            0
+          );
+        } else if (timeRange === "7d") {
+          // Desde 6 días antes a hoy (7 días total)
+          dateFrom = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - 6,
+            0,
+            0,
+            0,
+            0
+          );
+        } else {
+          // 30 días antes a hoy
+          dateFrom = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - 29,
+            0,
+            0,
+            0,
+            0
+          );
+        }
+
+        const dateParam = dateFrom.toISOString();
 
         const response = await api.get("/moods/chart", {
           params: {
             range: timeRange,
-            clientDateISO,
+            date: dateParam,
+            timezone,
           },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -79,13 +120,15 @@ export default function Statistics() {
         const token = await getToken();
         if (!token) throw new Error("No token disponible");
 
-        const now = new Date(); // Fecha y hora actuales del cliente
-        now.setHours(0, 0, 0, 0); // Setea a medianoche local del cliente
-        const clientDateUTC = now.toISOString(); // Convierte a UTC para enviar al backend
+        const now = new Date();
 
-        console.log("Client Date UTC:", clientDateUTC);
+        // Convertir a string ISO local y extraer solo la parte de la fecha (YYYY-MM-DD)
+        const localDateStr = now.toLocaleDateString("en-CA", {
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        });
+
         const response = await api.get(
-          `/moods/average/today?date=${clientDateUTC}`,
+          `/moods/average/today?date=${localDateStr}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
