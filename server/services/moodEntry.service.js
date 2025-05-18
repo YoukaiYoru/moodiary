@@ -10,6 +10,14 @@ const moodScoreToEmoji = {
   5: '😄', // Alegría
 };
 
+const moodScoreToName = {
+  1: 'Tristeza',
+  2: 'Enojo',
+  3: 'Ansiedad',
+  4: 'Calma',
+  5: 'Alegría',
+};
+
 function getEmojiFromAverage(score) {
   if (score >= 1 && score < 2) return moodScoreToEmoji[1];
   if (score >= 2 && score < 3) return moodScoreToEmoji[2];
@@ -17,6 +25,15 @@ function getEmojiFromAverage(score) {
   if (score >= 4 && score < 5) return moodScoreToEmoji[4];
   if (score === 5) return moodScoreToEmoji[5];
   return '❓';
+}
+
+function getNameFromAverage(score) {
+  if (score >= 1 && score < 2) return moodScoreToName[1];
+  if (score >= 2 && score < 3) return moodScoreToName[2];
+  if (score >= 3 && score < 4) return moodScoreToName[3];
+  if (score >= 4 && score < 5) return moodScoreToName[4];
+  if (score === 5) return moodScoreToName[5];
+  return 'Desconocido';
 }
 
 class MoodEntryService {
@@ -124,7 +141,7 @@ class MoodEntryService {
       include: {
         model: models.MoodType,
         as: 'moodType',
-        attributes: ['mood_score', 'name'],
+        attributes: ['mood_score'],
       },
     });
 
@@ -141,8 +158,50 @@ class MoodEntryService {
     return {
       average: parseFloat(average.toFixed(2)),
       emoji: getEmojiFromAverage(average),
-      name: entries[0].moodType.name,
+      name: getNameFromAverage(average),
     };
+  }
+  async getAverageMoodGroupedByDateLocal(userId, timezone) {
+    const entries = await models.MoodEntry.findAll({
+      where: { user_id: userId },
+      attributes: [
+        [
+          literal(
+            `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
+          ),
+          'date',
+        ],
+        [fn('AVG', col('moodType.mood_score')), 'average'],
+      ],
+      include: [
+        {
+          model: models.MoodType,
+          as: 'moodType',
+          attributes: [],
+        },
+      ],
+      group: [
+        literal(
+          `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
+        ),
+      ],
+      order: [
+        literal(
+          `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
+        ),
+      ],
+      raw: true,
+    });
+
+    return entries.map((e) => {
+      const avg = parseFloat(parseFloat(e.average).toFixed(2));
+      return {
+        date: e.date,
+        average: avg,
+        emoji: getEmojiFromAverage(avg),
+        name: getNameFromAverage(avg),
+      };
+    });
   }
 
   async findDistinctDates(userId) {
@@ -159,25 +218,31 @@ class MoodEntryService {
   // Devuelve las entradas de estado de ánimo para una fecha específica
   // en formato ISO UTC (ejemplo: '2025-05-16T00:00:00Z')
   async findByDateFormatted(userId, isoDate) {
-    const dateOnly = isoDate.split('T')[0];
+    const localMidnight = new Date(`${isoDate}T00:00:00`);
+    const utcStart = new Date(
+      localMidnight.getTime() - localMidnight.getTimezoneOffset() * 60000,
+    );
+    const utcEnd = new Date(utcStart.getTime() + 24 * 60 * 60 * 1000 - 1); // fin del día
 
     const entries = await models.MoodEntry.findAll({
       where: {
         user_id: userId,
-        [Op.and]: [where(fn('DATE', col('created_at')), dateOnly)],
+        created_at: {
+          [Op.between]: [utcStart, utcEnd],
+        },
       },
       include: ['moodType'],
       order: [['created_at', 'ASC']],
     });
 
     return entries.map((e) => ({
-      timestamp: e.created_at.toISOString(), // timestamp completo ISO UTC
+      timestamp: e.created_at.toISOString(), // sigue en UTC
       emotion: e.moodType?.emoji || '',
       text: e.note,
     }));
   }
 
-  async getChartData(userId, range = '1d', clientDateISO) {
+  async getChartData(userId, range = '1d', clientDateISO, timezone = 'UTC') {
     const rangeMap = {
       '1d': 1,
       '7d': 7,
@@ -185,18 +250,16 @@ class MoodEntryService {
     };
     const days = rangeMap[range] || 7;
 
-    // Fecha base según cliente o fecha actual UTC si no viene
     const baseDate = clientDateISO ? new Date(clientDateISO) : new Date();
 
-    // Calculamos fecha inicio y fin en UTC (ajustado al cliente)
+    // Ajuste de fechas UTC para la consulta
     const endDateUTC = new Date(baseDate);
     endDateUTC.setUTCHours(23, 59, 59, 999);
-
     const startDateUTC = new Date(endDateUTC);
     startDateUTC.setUTCDate(endDateUTC.getUTCDate() - (days - 1));
     startDateUTC.setUTCHours(0, 0, 0, 0);
 
-    const results = await models.MoodEntry.findAll({
+    const entries = await models.MoodEntry.findAll({
       where: {
         user_id: userId,
         created_at: {
@@ -208,13 +271,26 @@ class MoodEntryService {
 
     const grouped = {};
 
-    for (const entry of results) {
-      // Convertimos a fecha en UTC para agrupar según día UTC (puedes ajustar a local en frontend)
-      const date = entry.created_at.toISOString().split('T')[0];
-      const mood = entry.moodType.name;
+    for (const entry of entries) {
+      const createdAt = new Date(
+        entry.created_at.toLocaleString('en-US', { timeZone: timezone }),
+      );
 
-      if (!grouped[date]) grouped[date] = {};
-      grouped[date][mood] = (grouped[date][mood] || 0) + 1;
+      let key;
+      if (range === '1d') {
+        // Agrupar por hora local
+        const hour = createdAt.getHours().toString().padStart(2, '0');
+        key = `${createdAt.toISOString().split('T')[0]}T${hour}:00`;
+      } else {
+        // Agrupar por día local
+        key = createdAt.toLocaleDateString('en-CA', { timeZone: timezone });
+      }
+
+      const mood = entry.moodType.name;
+      const score = entry.moodType.mood_score;
+
+      if (!grouped[key]) grouped[key] = {};
+      grouped[key][mood] = (grouped[key][mood] || 0) + score;
     }
 
     return Object.entries(grouped).map(([date, moods]) => ({

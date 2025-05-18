@@ -42,6 +42,26 @@ router.get('/average/today', requireAuth(), async (req, res, next) => {
   }
 });
 
+router.get('/average/by-date', requireAuth(), async (req, res, next) => {
+  try {
+    const { userId } = getAuth(req);
+    const { timezone } = req.query; // Ej: "America/Lima"
+
+    if (!timezone) {
+      return res.status(400).json({ error: 'timezone is required' });
+    }
+
+    const averages = await service.getAverageMoodGroupedByDateLocal(
+      userId,
+      timezone,
+    );
+
+    res.json(averages);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ✅ Crear nueva entrada (autenticado)
 router.post(
   '/',
@@ -100,14 +120,19 @@ router.get('/dates', requireAuth(), async (req, res, next) => {
 router.get('/chart', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const { range = '1d' } = req.query;
-    const data = await service.getChartData(userId, range);
+    const { range, date, timezone } = req.query;
+
+    const data = await service.getChartData(
+      userId,
+      range,
+      date,
+      timezone || 'UTC',
+    );
     res.json(data);
   } catch (error) {
     next(error);
   }
 });
-
 // ✅ Obtener entradas por fecha
 router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   try {
