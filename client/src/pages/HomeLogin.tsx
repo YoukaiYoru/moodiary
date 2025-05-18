@@ -1,5 +1,5 @@
-import axios from "axios";
 import api from "@/lib/axios";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type React from "react";
@@ -20,7 +20,8 @@ export default function HomeLogin() {
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
-  const [confettiCount, setConfettiCount] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
   const emojis = [
     { emoji: "😄", value: "Alegría" },
     { emoji: "😰", value: "Ansiedad" },
@@ -29,7 +30,6 @@ export default function HomeLogin() {
     { emoji: "😤", value: "Enojo" },
   ];
 
-  // Seleccionar emoji
   const handleEmojiClick = (emotion: string) => {
     setSelectedEmoji(emotion);
     setBounceEmoji(emotion);
@@ -38,60 +38,55 @@ export default function HomeLogin() {
     setTimeout(() => setBounceEmoji(null), 2500);
   };
 
-  // Contador de caracteres
   const max_length = 250;
   const total_chars = text.length;
   const words = text.trim() === "" ? 0 : text.split(/\s+/).length;
   const remaining = max_length - total_chars;
+
   const wordCounter = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setText(value);
+    setText(e.target.value);
   };
 
-  // Enviar datos
   const handleSubmit = async () => {
-    if (!text.trim() || !selectedEmoji) {
-      return;
-    }
+    if (!text.trim() || !selectedEmoji || submitting) return;
+    setSubmitting(true);
 
     try {
-      // Obtener token JWT de Clerk
       const token = await getToken();
-
-      // Construir body para el POST
-      const body = {
-        mood: selectedEmoji,
-        date: new Date().toISOString(),
-        note: text,
-      };
-
-      // Petición POST con Axios incluyendo token en headers
-      if (!token) {
+      if (!token)
         throw new Error("No se pudo obtener el token de autenticación.");
-      }
-      await api.post("/moods", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
 
-      // Resetear formulario y estados
+      await api.post(
+        "/moods",
+        {
+          mood: selectedEmoji,
+          date: new Date().toISOString(),
+          note: text,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       setText("");
       setSelectedEmoji(null);
-      setIsError(false);
       toast.success("Estado de ánimo enviado con éxito ✅");
     } catch (error: unknown) {
+      let message = "Error desconocido";
+
       if (axios.isAxiosError(error)) {
-        toast.error("Error enviando estado de ánimo", {
-          description: error.response?.data?.error || error.message,
-        });
+        message = error.response?.data?.error || error.message;
       } else if (error instanceof Error) {
-        toast.error("Error enviando estado de ánimo", {
-          description: error.message,
-        });
-      } else {
-        toast.error("Error desconocido");
+        message = error.message;
       }
+
+      toast.error("Error enviando estado de ánimo", {
+        description: message,
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -102,9 +97,7 @@ export default function HomeLogin() {
     }
   };
 
-  // Confetti
   const handleConfetti = () => {
-    // Add some confetti
     confetti({
       particleCount: 200,
       angle: 60,
@@ -117,7 +110,6 @@ export default function HomeLogin() {
       spread: 180,
       origin: { x: 1, y: 0.6 },
     });
-    setConfettiCount((prev) => prev + 1);
   };
 
   return (
@@ -128,6 +120,7 @@ export default function HomeLogin() {
           <h1 className="font-dosis font-light text-5xl pt-4 pb-4">
             ¿Cómo te sientes hoy? 🫣
           </h1>
+
           <TooltipProvider>
             <div className="flex justify-center items-center">
               {emojis.map(({ emoji, value }) => (
@@ -149,10 +142,11 @@ export default function HomeLogin() {
               ))}
             </div>
           </TooltipProvider>
+
           <div className="relative w-[60vw] mt-6">
             <Textarea
               className="min-h-[50px] w-full pr-16 rounded-2xl border-none text-lg sm:text-lg md:text-xl placeholder:text-xl shadow-lg
-                        resize-none overflow-hidden backdrop-blur-2xl"
+                resize-none overflow-hidden backdrop-blur-2xl"
               placeholder="Escribe cómo te sientes hoy... Ej: Me siento agradecido y con energía"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -168,17 +162,19 @@ export default function HomeLogin() {
               className="absolute top-[50%] right-4 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer"
               title="Enviar"
               onClick={handleSubmit}
+              disabled={!text.trim() || !selectedEmoji || submitting}
             >
               <TiLocationArrowOutline />
             </Button>
           </div>
-          {/* Contadores */}
+
           <div className="flex justify-end items-center w-[60vw] mt-4">
             <p className="text-sm font-dosis px-2">Palabras: {words}</p>
             <p className="text-sm font-dosis px-2">
               Caracteres: {total_chars}/{remaining}
             </p>
           </div>
+
           <Button
             variant="outline"
             className="mt-2 shadow-amber-100 cursor-pointer hover:shadow hover:scale-110"
