@@ -138,8 +138,14 @@ router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const { isoDate } = req.params;
+    // offset en minutos (por ejemplo, -300 para UTC-5)
+    const offsetMinutes = parseInt(req.query.offset, 10) || 0;
 
-    const entries = await service.findByDateFormatted(userId, isoDate);
+    const entries = await service.findByDateFormatted(
+      userId,
+      isoDate,
+      offsetMinutes,
+    );
     res.json(entries);
   } catch (error) {
     next(error);

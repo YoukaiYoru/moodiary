@@ -1,6 +1,14 @@
 const { Op, fn, col, literal, where } = require('sequelize');
 const Boom = require('@hapi/boom');
 const { models } = require('../libs/sequelize'); // Adjust the path to your sequelize instance
+const {
+  formatInTimeZone,
+  toZonedTime,
+  fromZonedTime,
+  format,
+} = require('date-fns-tz');
+
+const { startOfDay, endOfDay, subDays, formatISO } = require('date-fns');
 
 const moodScoreToEmoji = {
   1: '😢', // Tristeza
@@ -217,12 +225,17 @@ class MoodEntryService {
 
   // Devuelve las entradas de estado de ánimo para una fecha específica
   // en formato ISO UTC (ejemplo: '2025-05-16T00:00:00Z')
-  async findByDateFormatted(userId, isoDate) {
+  async findByDateFormatted(userId, isoDate, offsetMinutes = 0) {
+    // isoDate: 'YYYY-MM-DD' en la zona horaria del usuario
+    // offsetMinutes: diferencia con UTC en minutos (ejemplo: -300 para UTC-5)
+
+    // Construimos la fecha local en la zona del usuario:
     const localMidnight = new Date(`${isoDate}T00:00:00`);
-    const utcStart = new Date(
-      localMidnight.getTime() - localMidnight.getTimezoneOffset() * 60000,
-    );
-    const utcEnd = new Date(utcStart.getTime() + 24 * 60 * 60 * 1000 - 1); // fin del día
+
+    // Calculamos el inicio y fin del día en UTC,
+    // compensando la diferencia de zona horaria
+    const utcStart = new Date(localMidnight.getTime() - offsetMinutes * 60000);
+    const utcEnd = new Date(utcStart.getTime() + 24 * 60 * 60 * 1000 - 1);
 
     const entries = await models.MoodEntry.findAll({
       where: {
@@ -236,34 +249,47 @@ class MoodEntryService {
     });
 
     return entries.map((e) => ({
-      timestamp: e.created_at.toISOString(), // sigue en UTC
+      timestamp: e.created_at.toISOString(), // UTC
       emotion: e.moodType?.emoji || '',
       text: e.note,
     }));
   }
 
   async getChartData(userId, range = '1d', clientDateISO, timezone = 'UTC') {
-    const rangeMap = {
-      '1d': 1,
-      '7d': 7,
-      '30d': 30,
-    };
+    const rangeMap = { '1d': 1, '7d': 7, '30d': 30 };
     const days = rangeMap[range] || 7;
 
-    const baseDate = clientDateISO ? new Date(clientDateISO) : new Date();
+    // Fecha base en UTC (o la que pase el cliente)
+    const baseDateUTC = clientDateISO ? new Date(clientDateISO) : new Date();
 
-    // Ajuste de fechas UTC para la consulta
-    const endDateUTC = new Date(baseDate);
-    endDateUTC.setUTCHours(23, 59, 59, 999);
-    const startDateUTC = new Date(endDateUTC);
-    startDateUTC.setUTCDate(endDateUTC.getUTCDate() - (days - 1));
-    startDateUTC.setUTCHours(0, 0, 0, 0);
+    // Convertir a fecha local en la zona horaria del usuario
+    const baseDateLocal = toZonedTime(baseDateUTC, timezone);
 
+    // Obtener string fecha base local en formato yyyy-MM-dd (día completo)
+    const baseDateStr = formatInTimeZone(baseDateLocal, timezone, 'yyyy-MM-dd');
+
+    // Construir la fecha base local a medianoche (inicio del día) en la zona horaria
+    const baseMidnightLocal = fromZonedTime(
+      new Date(baseDateStr + 'T00:00:00'),
+      timezone,
+    );
+
+    // Calcular fecha de inicio restando (days - 1) días a la fecha base local a medianoche
+    // Como baseMidnightLocal es UTC equivalente a la zona horaria local, podemos restar ms directo
+    const startUTC = new Date(
+      baseMidnightLocal.getTime() - (days - 1) * 86400000,
+    );
+
+    // Fecha de fin será la fecha base local a las 23:59:59 en la zona horaria
+    const endDateStr = baseDateStr + 'T23:59:59';
+    const endUTC = fromZonedTime(new Date(endDateStr), timezone);
+
+    // Consultar la base de datos con el rango entre startUTC y endUTC
     const entries = await models.MoodEntry.findAll({
       where: {
         user_id: userId,
         created_at: {
-          [Op.between]: [startDateUTC, endDateUTC],
+          [Op.between]: [startUTC, endUTC],
         },
       },
       include: ['moodType'],
@@ -272,19 +298,14 @@ class MoodEntryService {
     const grouped = {};
 
     for (const entry of entries) {
-      const createdAt = new Date(
-        entry.created_at.toLocaleString('en-US', { timeZone: timezone }),
-      );
+      // Convertir created_at UTC a fecha local en zona horaria
+      const createdAtLocal = toZonedTime(entry.created_at, timezone);
 
-      let key;
-      if (range === '1d') {
-        // Agrupar por hora local
-        const hour = createdAt.getHours().toString().padStart(2, '0');
-        key = `${createdAt.toISOString().split('T')[0]}T${hour}:00`;
-      } else {
-        // Agrupar por día local
-        key = createdAt.toLocaleDateString('en-CA', { timeZone: timezone });
-      }
+      // Clave de agrupación: por hora para 1d, por día para 7d y 30d
+      const key =
+        range === '1d'
+          ? formatInTimeZone(createdAtLocal, timezone, "yyyy-MM-dd'T'HH':00'")
+          : formatInTimeZone(createdAtLocal, timezone, 'yyyy-MM-dd');
 
       const mood = entry.moodType.name;
       const score = entry.moodType.mood_score;
@@ -293,10 +314,12 @@ class MoodEntryService {
       grouped[key][mood] = (grouped[key][mood] || 0) + score;
     }
 
-    return Object.entries(grouped).map(([date, moods]) => ({
-      date,
-      ...moods,
-    }));
+    // Ordenar resultados
+    const sortedEntries = Object.entries(grouped)
+      .sort(([a], [b]) => new Date(a) - new Date(b))
+      .map(([date, moods]) => ({ date, ...moods }));
+
+    return sortedEntries;
   }
 }
 
