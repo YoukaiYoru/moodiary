@@ -31,8 +31,12 @@ router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
 router.get('/average/today', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const { average, emoji } = await service.getAverageMoodToday(userId);
-    res.json({ average, emoji });
+    const { date } = req.query;
+    const { average, emoji, name } = await service.getAverageMoodToday(
+      userId,
+      date,
+    );
+    res.json({ average, emoji, name });
   } catch (error) {
     next(error);
   }
