@@ -1,22 +1,14 @@
-# /server/Dockerfile
-
-# Usar la imagen oficial de Node
+# server/Dockerfile
 FROM node:18
 
-# Crear un directorio para el servidor
 WORKDIR /app
 
-# Copiar archivos de configuración y dependencias
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
-# Instalar dependencias
-RUN npm install
+RUN npm install --silent
 
-# Copiar el código fuente
-COPY . ./
+COPY . .
 
-# Exponer el puerto de la API
 EXPOSE 5001
 
-# Iniciar el servidor
-CMD ["node", "index.js"]
+CMD ["npm", "run", "start"]
