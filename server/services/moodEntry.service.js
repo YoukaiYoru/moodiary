@@ -106,11 +106,12 @@ class MoodEntryService {
   }
   //Custom services
 
-  async getAverageMoodToday(userId) {
-    const startOfDay = new Date();
+  async getAverageMoodToday(userId, clientDateUTC) {
+    const baseDate = clientDateUTC ? new Date(clientDateUTC) : new Date();
+    const startOfDay = new Date(baseDate);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
+    const endOfDay = new Date(baseDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     const entries = await models.MoodEntry.findAll({
@@ -123,12 +124,12 @@ class MoodEntryService {
       include: {
         model: models.MoodType,
         as: 'moodType',
-        attributes: ['mood_score'],
+        attributes: ['mood_score', 'name'],
       },
     });
 
     if (entries.length === 0) {
-      return { average: 0, emoji: '😐' }; // emoji neutro, por ejemplo
+      return { average: 0, emoji: '😐', name: 'No hay emociones' }; // emoji neutro, por ejemplo
     }
 
     const sum = entries.reduce(
@@ -140,6 +141,7 @@ class MoodEntryService {
     return {
       average: parseFloat(average.toFixed(2)),
       emoji: getEmojiFromAverage(average),
+      name: entries[0].moodType.name,
     };
   }
 
