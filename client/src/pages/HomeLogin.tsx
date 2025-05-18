@@ -78,6 +78,7 @@ export default function HomeLogin() {
       // Resetear formulario y estados
       setText("");
       setSelectedEmoji(null);
+      setIsError(false);
       toast.success("Estado de ánimo enviado con éxito ✅");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
