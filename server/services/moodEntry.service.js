@@ -147,15 +147,17 @@ class MoodEntryService {
 
   async findDistinctDates(userId) {
     const results = await models.MoodEntry.findAll({
-      attributes: [[fn('DATE', col('created_at')), 'date']],
+      attributes: ['created_at'],
       where: { user_id: userId },
-      group: [literal('DATE(created_at)')],
-      order: [literal('DATE(created_at) DESC')],
+      order: [['created_at', 'DESC']],
       raw: true,
     });
 
     return results; // [{ date: '2025-05-16' }, ...]
   }
+
+  // Devuelve las entradas de estado de ánimo para una fecha específica
+  // en formato ISO UTC (ejemplo: '2025-05-16T00:00:00Z')
   async findByDateFormatted(userId, isoDate) {
     const dateOnly = isoDate.split('T')[0];
 
@@ -169,13 +171,13 @@ class MoodEntryService {
     });
 
     return entries.map((e) => ({
-      hour: e.created_at.toTimeString().slice(0, 5), // HH:MM
-      emotion: e.moodType?.emoji || '', // opcional, por si no hay asociación
+      timestamp: e.created_at.toISOString(), // timestamp completo ISO UTC
+      emotion: e.moodType?.emoji || '',
       text: e.note,
     }));
   }
 
-  async getChartData(userId, range = '1d') {
+  async getChartData(userId, range = '1d', clientDateISO) {
     const rangeMap = {
       '1d': 1,
       '7d': 7,
@@ -183,19 +185,31 @@ class MoodEntryService {
     };
     const days = rangeMap[range] || 7;
 
+    // Fecha base según cliente o fecha actual UTC si no viene
+    const baseDate = clientDateISO ? new Date(clientDateISO) : new Date();
+
+    // Calculamos fecha inicio y fin en UTC (ajustado al cliente)
+    const endDateUTC = new Date(baseDate);
+    endDateUTC.setUTCHours(23, 59, 59, 999);
+
+    const startDateUTC = new Date(endDateUTC);
+    startDateUTC.setUTCDate(endDateUTC.getUTCDate() - (days - 1));
+    startDateUTC.setUTCHours(0, 0, 0, 0);
+
     const results = await models.MoodEntry.findAll({
       where: {
         user_id: userId,
         created_at: {
-          [Op.gte]: literal(`CURRENT_DATE - INTERVAL '${days} day'`),
+          [Op.between]: [startDateUTC, endDateUTC],
         },
       },
-      include: ['moodType'], // si definiste asociación
+      include: ['moodType'],
     });
 
     const grouped = {};
 
     for (const entry of results) {
+      // Convertimos a fecha en UTC para agrupar según día UTC (puedes ajustar a local en frontend)
       const date = entry.created_at.toISOString().split('T')[0];
       const mood = entry.moodType.name;
 

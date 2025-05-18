@@ -113,6 +113,7 @@ router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const { isoDate } = req.params;
+
     const entries = await service.findByDateFormatted(userId, isoDate);
     res.json(entries);
   } catch (error) {
