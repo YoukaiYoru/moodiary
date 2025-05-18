@@ -1,67 +1,21 @@
 import React from "react";
-import { useParams } from "react-router";
+import { useParams } from "react-router-dom";
 import Notes from "@/components/Notes";
-import api from "@/lib/axios"; // tu instancia axios configurada
+import api from "@/lib/axios";
 import { useAuth } from "@clerk/clerk-react";
 
+type Note = {
+  hour: string;
+  emotion: string;
+  text: string;
+};
+
 export default function MoodNotes() {
-  const { id: dateParam } = useParams<{ id: string }>(); // asumiendo que la ruta es /moods/entries/:id
+  const { id: dateParam } = useParams<{ id: string }>();
   const { getToken } = useAuth();
-  const [notes, setNotes] = React.useState<
-    { hour: string; emotion: string; text: string }[]
-  >([]);
 
-  React.useEffect(() => {
-    if (!dateParam) return;
-
-    const fetchNotesByDate = async () => {
-      try {
-        const token = await getToken();
-        const response = await api.get(`/moods/entries/${dateParam}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Aquí adaptas según la forma que te llegue el JSON
-        setNotes(response.data);
-      } catch (error) {
-        console.error("Error fetching mood notes:", error);
-        setNotes([]); // opcional: limpiar notas si hay error
-      }
-    };
-
-    fetchNotesByDate();
-  }, [dateParam, getToken]);
-  // const DatesFromParam = [
-  //   {
-  //     hour: "13:53",
-  //     emotion: "😄",
-  //     text: "Hoy me siento feliz porque he tenido un buen día. Hoy me siento feliz porque he tenido un buen día. Hoy me siento feliz porque he tenido un buen día. Hoy me siento feliz porque he tenido un buen día. Hoy me siento feliz porque he tenido un buen día.",
-  //   },
-  //   {
-  //     hour: "14:53",
-  //     emotion: "😍",
-  //     text: "Hoy me siento triste porque he tenido un mal día.",
-  //   },
-  //   {
-  //     hour: "15:53",
-  //     emotion: "😕",
-  //     text: "Hoy me siento enojado porque he tenido un mal día.",
-  //   },
-  //   {
-  //     hour: "16:53",
-  //     emotion: "🫠",
-  //     text: "Hoy me siento sorprendido porque he tenido un buen día.",
-  //   },
-  //   {
-  //     hour: "17:53",
-  //     emotion: "😤",
-  //     text: "Hoy me siento asqueado porque he tenido un mal día.",
-  //   },
-  // ];
-
-  const [loading, setLoading] = React.useState(true);
+  const [notes, setNotes] = React.useState<Note[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (!dateParam) return;
@@ -75,7 +29,32 @@ export default function MoodNotes() {
             Authorization: `Bearer ${token}`,
           },
         });
-        setNotes(response.data);
+
+        type ApiNote = {
+          timestamp: string;
+          emotion: string;
+          text: string;
+        };
+
+        const adaptedNotes: Note[] = (response.data as ApiNote[]).map(
+          (item) => {
+            const date = new Date(item.timestamp);
+            const dateStr = date.toLocaleDateString(navigator.language); // Ej: "18/5/2025"
+            const timeStr = date.toLocaleTimeString(navigator.language, {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false, // Usa formato 24h
+            });
+
+            return {
+              hour: `${dateStr} ${timeStr}`, // ej: "18/5/2025 23:15"
+              emotion: item.emotion,
+              text: item.text,
+            };
+          }
+        );
+
+        setNotes(adaptedNotes);
       } catch (error) {
         console.error("Error fetching mood notes:", error);
         setNotes([]);

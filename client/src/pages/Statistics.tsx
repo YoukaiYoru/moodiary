@@ -29,11 +29,20 @@ export default function Statistics() {
     async function fetchChartData() {
       try {
         const token = await getToken();
-        const response = await api.get(`/moods/chart?range=${timeRange}`, {
+        if (!token) throw new Error("No token disponible");
+
+        const clientDateISO = new Date().toISOString();
+
+        const response = await api.get("/moods/chart", {
+          params: {
+            range: timeRange,
+            clientDateISO,
+          },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+
         setChartData(response.data);
       } catch (error) {
         console.error("Error fetching chart data:", error);
@@ -41,7 +50,7 @@ export default function Statistics() {
     }
 
     fetchChartData();
-  }, [timeRange, getToken]);
+  }, [getToken, timeRange]);
 
   // useEffect para traer la frase motivacional
   useEffect(() => {
@@ -53,14 +62,15 @@ export default function Statistics() {
             Authorization: `Bearer ${token}`,
           },
         });
-        // Asumiendo que la frase viene en response.data.phrase o similar
-        setPhrase(response.data.phrase || phrase);
+        setPhrase(
+          response.data.message || "No hay frase motivacional disponible"
+        );
       } catch (error) {
         console.error("Error fetching motivational quote:", error);
       }
     }
     fetchMotivationalQuote();
-  }, [getToken, phrase]);
+  }, [getToken]);
 
   // useEffect para traer el estado de ánimo promedio
   useEffect(() => {

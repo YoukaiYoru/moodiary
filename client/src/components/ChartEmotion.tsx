@@ -53,6 +53,15 @@ export default function ChartEmotion({
   timeRange,
   onRangeChange,
 }: Props) {
+  // Normaliza datos para asegurar que todas las claves existan con valor numérico (0 si falta)
+  const normalizedData = data.map((item) => {
+    const newItem = { ...item };
+    Object.keys(config).forEach((key) => {
+      if (newItem[key] == null) newItem[key] = 0;
+    });
+    return newItem;
+  });
+
   const formatDate = (value: string) => {
     const date = new Date(value);
     return timeRange === "1d"
@@ -89,7 +98,7 @@ export default function ChartEmotion({
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer config={config} className="h-[250px] w-full">
-          <AreaChart data={data}>
+          <AreaChart data={normalizedData}>
             <defs>
               {Object.keys(config).map((key) => (
                 <linearGradient
@@ -102,12 +111,12 @@ export default function ChartEmotion({
                 >
                   <stop
                     offset="5%"
-                    stopColor={`var(--color-${key})`}
+                    stopColor={config[key].color}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={`var(--color-${key})`}
+                    stopColor={config[key].color}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -139,7 +148,7 @@ export default function ChartEmotion({
                 key={key}
                 dataKey={key}
                 type="natural"
-                stroke={`var(--color-${key})`}
+                stroke={config[key].color}
                 fill={`url(#fill${key})`}
                 stackId="a"
               />

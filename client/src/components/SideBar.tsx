@@ -53,25 +53,48 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const fetchNotes = React.useCallback(async () => {
     try {
-      const token = await getToken(); // Use Clerk's getToken with template
+      const token = await getToken();
       if (!token) {
         console.error("No token found");
         return;
       }
+
       const response = await api.get("/moods/dates", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setNoteItems(response.data);
+
+      // Agrupar por fecha local
+      interface MoodItem {
+        created_at: string;
+        // Add other properties if needed
+      }
+
+      interface GroupedNotes {
+        [date: string]: MoodItem[];
+      }
+
+      const grouped: GroupedNotes = (response.data as MoodItem[]).reduce(
+        (acc: GroupedNotes, item: MoodItem) => {
+          const localDate = new Date(item.created_at).toLocaleDateString(
+            "en-CA"
+          ); // YYYY-MM-DD
+          if (!acc[localDate]) acc[localDate] = [];
+          acc[localDate].push(item);
+          return acc;
+        },
+        {}
+      );
+
+      // Si solo necesitas las fechas únicas en formato YYYY-MM-DD
+      const localDates = Object.keys(grouped);
+
+      setNoteItems(localDates.map((date) => ({ date }))); // o setNoteItems(grouped) si necesitas los items agrupados
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
   }, [getToken]);
-
-  React.useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
 
   React.useEffect(() => {
     if (!isNotesOpen) {
