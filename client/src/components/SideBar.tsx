@@ -1,4 +1,5 @@
 import React from "react";
+import api from "@/lib/axios";
 import {
   Home,
   BarChart2,
@@ -8,10 +9,8 @@ import {
   Search,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
-
-import { Popover, PopoverTrigger, PopoverContent } from "@ui/popover";
-import { Button } from "@ui/button";
-import { Calendar } from "@ui/calendar";
+import { format } from "date-fns";
+import { useAuth } from "@clerk/clerk-react";
 
 import {
   Sidebar,
@@ -26,145 +25,104 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-
-import { cn } from "@/lib/utils";
-
 import {
+  Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Collapsible,
 } from "@/components/ui/collapsible";
-
+import { Popover, PopoverTrigger, PopoverContent } from "@ui/popover";
+import { Button } from "@ui/button";
+import { Calendar } from "@ui/calendar";
 import { UserButton } from "@clerk/clerk-react";
-import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-// Rutas principales
 const mainItems = [
-  {
-    title: "Home",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Estadísticas",
-    url: "/dashboard/stats",
-    icon: BarChart2,
-  },
+  { title: "Home", url: "/dashboard", icon: Home },
+  { title: "Estadísticas", url: "/dashboard/stats", icon: BarChart2 },
 ];
 
-const notesItems = [
-  {
-    date: "2023-10-01",
-    notes: [
-      {
-        id: 1,
-        title: "Meeting Notes",
-        content: "Discussed project milestones and deadlines.",
-        createdAt: "2023-10-01T10:00:00Z",
-      },
-      {
-        id: 2,
-        title: "Shopping List",
-        content: "Milk, Bread, Eggs, Butter.",
-        createdAt: "2023-10-01T12:30:00Z",
-      },
-      {
-        id: 3,
-        title: "Workout Plan",
-        content: "Monday: Chest, Tuesday: Back, Wednesday: Legs.",
-        createdAt: "2023-10-01T15:45:00Z",
-      },
-    ],
-  },
-  {
-    date: "2025-05-16",
-    notes: [
-      {
-        id: 1,
-        title: "Meeting Notes",
-        content: "Discussed project milestones and deadlines.",
-        createdAt: "2023-10-01T10:00:00Z",
-      },
-      {
-        id: 2,
-        title: "Shopping List",
-        content: "Milk, Bread, Eggs, Butter.",
-        createdAt: "2023-10-01T12:30:00Z",
-      },
-      {
-        id: 3,
-        title: "Workout Plan",
-        content: "Monday: Chest, Tuesday: Back, Wednesday: Legs.",
-        createdAt: "2023-10-01T15:45:00Z",
-      },
-    ],
-  },
-  {
-    date: "2023-10-02",
-    notes: [
-      {
-        id: 4,
-        title: "Daily Journal",
-        content: "Reflected on the day's events and emotions.",
-        createdAt: "2023-10-02T09:00:00Z",
-      },
-      {
-        id: 5,
-        title: "Grocery List",
-        content: "Tomatoes, Onions, Garlic, Chicken.",
-        createdAt: "2023-10-02T11:15:00Z",
-      },
-    ],
-  },
-  {
-    date: "2023-10-03",
-    notes: [
-      {
-        id: 6,
-        title: "Project Ideas",
-        content: "Brainstormed ideas for the new app.",
-        createdAt: "2023-10-03T14:00:00Z",
-      },
-      {
-        id: 7,
-        title: "Travel Itinerary",
-        content: "Planned trip to the mountains for the weekend.",
-        createdAt: "2023-10-03T16:30:00Z",
-      },
-    ],
-  },
-];
+interface NoteGroup {
+  date: string;
+}
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
+  const [noteItems, setNoteItems] = React.useState<NoteGroup[]>([]);
+  const [isNotesOpen, setIsNotesOpen] = React.useState(true);
 
-  // Function to handle date selection and trigger search
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
+  const fetchNotes = React.useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
 
-    if (selectedDate) {
-      const formattedDate = format(selectedDate, "yyyy-MM-dd");
-      console.log("Filtering notes for date:", formattedDate);
-      // Filter notesItems based on the selected date
-      const filteredNotes = notesItems.filter(
-        (group) => group.date === formattedDate
+      const response = await api.get("/moods/dates", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Detectar la zona horaria del cliente automáticamente
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      interface MoodItem {
+        created_at: string;
+      }
+
+      interface GroupedNotes {
+        [date: string]: MoodItem[];
+      }
+
+      const grouped: GroupedNotes = (response.data as MoodItem[]).reduce(
+        (acc: GroupedNotes, item: MoodItem) => {
+          const localDate = new Date(item.created_at).toLocaleDateString(
+            "en-CA",
+            {
+              timeZone: userTimeZone,
+            }
+          ); // ej: "2025-05-17"
+
+          if (!acc[localDate]) acc[localDate] = [];
+          acc[localDate].push(item);
+
+          return acc;
+        },
+        {}
       );
-      console.log("Filtered Notes:", filteredNotes);
+
+      const localDates = Object.keys(grouped);
+
+      setNoteItems(localDates.map((date) => ({ date }))); // O `grouped` si necesitas los items
+    } catch (error) {
+      console.error("Error fetching notes:", error);
     }
-  };
+  }, [getToken]);
 
-  const renderNotesItems = () => {
-    const filteredNotes = date
-      ? notesItems.filter((group) => group.date === format(date, "yyyy-MM-dd"))
-      : notesItems;
+  React.useEffect(() => {
+    if (!isNotesOpen) {
+      fetchNotes();
+    }
+  }, [isNotesOpen, fetchNotes]);
 
-    return filteredNotes.map((group) => (
+  const filteredNotes = date
+    ? noteItems.filter((group) => group.date === format(date, "yyyy-MM-dd"))
+    : noteItems;
+
+  const renderNoteLinks = () =>
+    filteredNotes.map((group) => (
       <SidebarMenuSubItem key={group.date}>
         <SidebarMenuButton asChild>
           <NavLink
             to={`/dashboard/notes/${group.date}`}
             className={({ isActive }) =>
-              isActive ? "text-primary font-semibold" : "text-muted-foreground"
+              cn(
+                isActive
+                  ? "text-primary font-semibold"
+                  : "text-muted-foreground"
+              )
             }
           >
             <FileText className="mr-2 h-4 w-4" />
@@ -173,7 +131,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenuButton>
       </SidebarMenuSubItem>
     ));
-  };
 
   return (
     <Sidebar
@@ -182,30 +139,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {...props}>
       <SidebarContent className="">
         <SidebarGroup>
-          {/* <SidebarGroupLabel className="text-2xl font-playwrite text-[hsl(240,25%,20%)] flex justify-center items-center h-15">Moodiary</SidebarGroupLabel> */}
           <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-[#94461C] flex justify-center items-center h-20">Moodiary</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {mainItems.map(({ title, url, icon: Icon }) => (
+                <SidebarMenuItem key={title}>
                   <SidebarMenuButton asChild>
                     <NavLink
-                      to={item.url}
+                      to={url}
                       className={({ isActive }) =>
-                        isActive
-                          ? "text-primary font-semibold"
-                          : "text-muted-foreground"
+                        cn(
+                          isActive
+                            ? "text-primary font-semibold"
+                            : "text-muted-foreground"
+                        )
                       }
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.title}
+                      <Icon className="mr-2 h-4 w-4" />
+                      {title}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
 
-              {/* Collapsible Notes Group */}
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible
+                defaultOpen
+                onOpenChange={(open) => setIsNotesOpen(open)}
+                className="group/collapsible"
+              >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
@@ -220,36 +181,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal p-0",
+                              "w-full justify-start text-left font-normal",
                               !date && "text-muted-foreground"
                             )}
                           >
                             <Search className="mr-2 h-4 w-4" />
-                            {date ? format(date, "PPP") : <span>Buscar</span>}
+                            {date ? format(date, "PPP") : "Buscar por fecha"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
                             selected={date}
-                            onSelect={handleDateSelect}
+                            onSelect={setDate}
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
+
                       {date && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="mt-2 w-full text-orange-600 hover:text-orange-400 dark:text-red-800 dark:hover:text-red-600"
-                          onClick={() => handleDateSelect(undefined)}
+                          onClick={() => setDate(undefined)}
                         >
-                          Clear Search
+                          Limpiar búsqueda
                         </Button>
                       )}
-                      {renderNotesItems()}
+
+                      {renderNoteLinks()}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>

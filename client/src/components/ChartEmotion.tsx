@@ -1,9 +1,6 @@
-// components/ResponsiveAreaChart.tsx
 "use client";
 
-import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
-
 import {
   Card,
   CardContent,
@@ -37,44 +34,45 @@ type Props = {
   description?: string;
   data: DataItem[];
   config: ChartConfig;
-  referenceDate?: string;
+  timeRange: string;
+  onRangeChange: (value: string) => void;
 };
 
 const TIME_RANGES = [
-  { value: "1d", label: "Last 24 hours", days: 1 },
-  { value: "7d", label: "Last 7 days", days: 7 },
-  { value: "30d", label: "Last 30 days", days: 30 },
-] as const;
+  { value: "1d", label: "Últimas 24h" },
+  { value: "7d", label: "Últimos 7 días" },
+  { value: "30d", label: "Últimos 30 días" },
+];
+const userLocale = navigator.language;
 
 export default function ChartEmotion({
   title,
   description,
   data,
   config,
-  referenceDate = new Date().toISOString().split("T")[0],
+  timeRange,
+  onRangeChange,
 }: Props) {
-  const [timeRange, setTimeRange] =
-    React.useState<(typeof TIME_RANGES)[number]["value"]>("1d");
-
-  const filteredData = React.useMemo(() => {
-    const refDate = new Date(referenceDate);
-    const range =
-      TIME_RANGES.find((r) => r.value === timeRange) ?? TIME_RANGES[2];
-    const startDate = new Date(refDate);
-    startDate.setDate(refDate.getDate() - range.days);
-
-    return data.filter((item) => {
-      const itemDate = new Date(item.date);
-      console.log("Parsed item date:", itemDate); // Debugging log
-      return itemDate >= startDate && itemDate <= refDate;
+  // Normaliza datos para asegurar que todas las claves existan con valor numérico (0 si falta)
+  const normalizedData = data.map((item) => {
+    const newItem = { ...item };
+    Object.keys(config).forEach((key) => {
+      if (newItem[key] == null) newItem[key] = 0;
     });
-  }, [data, timeRange, referenceDate]);
+    return newItem;
+  });
 
   const formatDate = (value: string) => {
     const date = new Date(value);
     return timeRange === "1d"
-      ? date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      ? date.toLocaleTimeString(userLocale, {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : date.toLocaleDateString(userLocale, {
+          month: "short",
+          day: "numeric",
+        });
   };
 
   return (
@@ -84,12 +82,9 @@ export default function ChartEmotion({
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
         </div>
-        <Select
-          value={timeRange}
-          onValueChange={(value) => setTimeRange(value as typeof timeRange)}
-        >
+        <Select value={timeRange} onValueChange={onRangeChange}>
           <SelectTrigger className="w-[160px] rounded-lg">
-            <SelectValue placeholder="Select range" />
+            <SelectValue placeholder="Selecciona el rango" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
             {TIME_RANGES.map(({ value, label }) => (
@@ -103,7 +98,7 @@ export default function ChartEmotion({
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer config={config} className="h-[250px] w-full">
-          <AreaChart data={filteredData}>
+          <AreaChart data={normalizedData}>
             <defs>
               {Object.keys(config).map((key) => (
                 <linearGradient
@@ -116,12 +111,12 @@ export default function ChartEmotion({
                 >
                   <stop
                     offset="5%"
-                    stopColor={`var(--color-${key})`}
+                    stopColor={config[key].color}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={`var(--color-${key})`}
+                    stopColor={config[key].color}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -134,7 +129,7 @@ export default function ChartEmotion({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={timeRange === "1d" ? 16 : 32}
+              minTickGap={32}
               tickFormatter={formatDate}
             />
 
@@ -153,7 +148,7 @@ export default function ChartEmotion({
                 key={key}
                 dataKey={key}
                 type="natural"
-                stroke={`var(--color-${key})`}
+                stroke={config[key].color}
                 fill={`url(#fill${key})`}
                 stackId="a"
               />
