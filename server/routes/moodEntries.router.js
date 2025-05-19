@@ -46,16 +46,29 @@ router.get('/average/today', requireAuth(), async (req, res, next) => {
 router.get('/average/by-date', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const { timezone } = req.query; // Ej: "America/Lima"
+    const { timezone, year, month } = req.query; // timezone obligatorio, year y month opcionales
 
     if (!timezone) {
       return res.status(400).json({ error: 'timezone is required' });
     }
 
-    const averages = await service.getAverageMoodGroupedByDateLocal(
-      userId,
-      timezone,
-    );
+    let averages;
+
+    if (year && month) {
+      // Si recibo año y mes, uso función para mes específico
+      averages = await service.getAverageMoodByMonth(
+        userId,
+        parseInt(year, 10),
+        parseInt(month, 10),
+        timezone,
+      );
+    } else {
+      // Si no, uso función para todas las fechas (o último rango, según implementación)
+      averages = await service.getAverageMoodGroupedByDateLocal(
+        userId,
+        timezone,
+      );
+    }
 
     res.json(averages);
   } catch (error) {

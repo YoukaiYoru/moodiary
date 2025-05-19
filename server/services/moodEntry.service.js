@@ -167,38 +167,47 @@ class MoodEntryService {
       name: getNameFromAverage(average),
     };
   }
-  async getAverageMoodGroupedByDateLocal(userId, timezone = 'UTC') {
-    const entries = await models.MoodEntry.findAll({
-      where: { user_id: userId },
-      include: {
-        model: models.MoodType,
-        as: 'moodType',
-        attributes: ['mood_score'],
-      },
-    });
+  async getAverageMoodByMonth(userId, year, month, timezone = 'UTC') {
+    // month: 1 = enero, 12 = diciembre
+    const results = [];
 
-    const grouped = {};
+    // Crear dayjs para el primer día del mes a la zona horaria
+    const firstDay = dayjs
+      .tz(`${year}-${String(month).padStart(2, '0')}-01`, timezone)
+      .startOf('day');
+    const daysInMonth = firstDay.daysInMonth();
 
-    for (const entry of entries) {
-      const localDate = dayjs(entry.created_at)
-        .tz(timezone)
-        .format('YYYY-MM-DD');
-      if (!grouped[localDate]) grouped[localDate] = [];
-      grouped[localDate].push(entry.moodType.mood_score);
+    for (let i = 0; i < daysInMonth; i++) {
+      const date = firstDay.add(i, 'day');
+      const startOfDayUTC = date.startOf('day').utc().toDate();
+      const endOfDayUTC = date.endOf('day').utc().toDate();
+
+      const entries = await models.MoodEntry.findAll({
+        where: {
+          user_id: userId,
+          created_at: { [Op.between]: [startOfDayUTC, endOfDayUTC] },
+        },
+        include: {
+          model: models.MoodType,
+          as: 'moodType',
+          attributes: ['mood_score'],
+        },
+      });
+
+      if (entries.length === 0) continue;
+
+      const sum = entries.reduce((acc, e) => acc + e.moodType.mood_score, 0);
+      const average = parseFloat((sum / entries.length).toFixed(2));
+
+      results.push({
+        date: date.format('YYYY-MM-DD'),
+        average,
+        emoji: getEmojiFromAverage(average),
+        name: getNameFromAverage(average),
+      });
     }
 
-    return Object.entries(grouped)
-      .sort(([a], [b]) => dayjs(a).unix() - dayjs(b).unix())
-      .map(([date, scores]) => {
-        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-        const average = parseFloat(avg.toFixed(2));
-        return {
-          date,
-          average,
-          emoji: getEmojiFromAverage(average),
-          name: getNameFromAverage(average),
-        };
-      });
+    return results;
   }
 
   async findDistinctDates(userId) {
