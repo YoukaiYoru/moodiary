@@ -1,11 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&family=Playwrite+DK+Loopet:wght@100..400&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Delius&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
 
 @import "tailwindcss";
 @import "tw-animate-css";
-
-@theme {
-  --font-playwrite: "Playwrite DK Loopet", sans-serif;
-}
 
 @layer base {
   .text-shadow {
@@ -22,12 +20,23 @@
 @theme {
   --font-playwrite: "Playwrite DK Loopet", sans-serif;
   --font-dosis: "Dosis", sans-serif;
+  --font-delius: "Delius", cursive;
+  --font-lobster: "Lobster", cursive;
+}
+
+.cl-avatarBox {
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
 @custom-variant dark (&:is(.dark *));
 
 .emoji-button {
   @apply text-5xl m-4 hover:text-shadow-lg border-none rounded-[50%] transform transition hover:scale-130 duration-200 text-shadow-lg cursor-pointer;
+}
+
+body {
+  background: #DEE6EC;
 }
 
 :root {

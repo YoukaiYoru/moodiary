@@ -11,6 +11,27 @@ export default defineConfig({
     },
 })
 
+module.exports = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            backgroundImage: {
+                'moodiary-gradient': 'linear-gradient(135deg, #CDB4DB, #FFCDB2, #D8F3DC)',
+            },
+            animation: {
+                'bg-pan': 'bg-pan 15s ease infinite',
+            },
+            keyframes: {
+                'bg-pan': {
+                    '0%': { 'background-position': '0% 50%' },
+                    '50%': { 'background-position': '100% 50%' },
+                    '100%': { 'background-position': '0% 50%' },
+                },
+            },
+        },
+    },
+};
+
 // /** @type {import('tailwindcss').Config} */
 // export const content = [
 //     "./index.html",
