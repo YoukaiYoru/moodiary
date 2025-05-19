@@ -31,10 +31,11 @@ router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
 router.get('/average/today', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const { date } = req.query;
+    const { date, timezone = 'UTC' } = req.query;
     const { average, emoji, name } = await service.getAverageMoodToday(
       userId,
       date,
+      timezone,
     );
     res.json({ average, emoji, name });
   } catch (error) {
@@ -120,14 +121,11 @@ router.get('/dates', requireAuth(), async (req, res, next) => {
 router.get('/chart', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const { range, date, timezone } = req.query;
+    const { range = '1d', date, timezone = 'UTC' } = req.query;
 
-    const data = await service.getChartData(
-      userId,
-      range,
-      date,
-      timezone || 'UTC',
-    );
+    // Llamar servicio con params, timezone por defecto 'UTC'
+    const data = await service.getChartData(userId, range, date, timezone);
+
     res.json(data);
   } catch (error) {
     next(error);

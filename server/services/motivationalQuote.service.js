@@ -32,25 +32,25 @@ class MotivationalQuoteService {
   async getMotivationalQuoteForToday(userId, moodService) {
     const { average: averageMood } =
       await moodService.getAverageMoodToday(userId);
-    if (isNaN(averageMood)) {
+
+    if (typeof averageMood !== 'number' || isNaN(averageMood)) {
       return {
         mood_score: null,
-        message: 'Unable to calculate mood average.',
+        message: 'No se pudo calcular tu estado de ánimo hoy.',
       };
     }
-    const roundedMood = Math.round(averageMood);
-    // default neutro si es 0
+
+    const roundedMood = Math.floor(averageMood);
 
     const randomFrase = await models.MotivationalQuote.findOne({
       where: { mood_score_target: roundedMood },
-      order: sequelize.random(),
+      order: sequelize.random(), // Sequelize literal para aleatoriedad
     });
 
     if (!randomFrase) {
       return {
         mood_score: roundedMood,
-        message:
-          'No hay frases por ahora, agrega más notas para ver más frases',
+        message: 'No hay frases motivacionales aún para este estado de ánimo.',
       };
     }
 

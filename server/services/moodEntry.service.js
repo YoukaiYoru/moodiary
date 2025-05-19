@@ -1,14 +1,12 @@
 const { Op, fn, col, literal, where } = require('sequelize');
 const Boom = require('@hapi/boom');
 const { models } = require('../libs/sequelize'); // Adjust the path to your sequelize instance
-const {
-  formatInTimeZone,
-  toZonedTime,
-  fromZonedTime,
-  format,
-} = require('date-fns-tz');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 
-const { startOfDay, endOfDay, subDays, formatISO } = require('date-fns');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const moodScoreToEmoji = {
   1: '😢', // Tristeza
@@ -131,13 +129,13 @@ class MoodEntryService {
   }
   //Custom services
 
-  async getAverageMoodToday(userId, clientDateUTC) {
-    const baseDate = clientDateUTC ? new Date(clientDateUTC) : new Date();
-    const startOfDay = new Date(baseDate);
-    startOfDay.setHours(0, 0, 0, 0);
+  async getAverageMoodToday(userId, clientDateISO, timezone = 'UTC') {
+    const baseDate = clientDateISO
+      ? dayjs.tz(clientDateISO, timezone)
+      : dayjs().tz(timezone);
 
-    const endOfDay = new Date(baseDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = baseDate.startOf('day').utc().toDate();
+    const endOfDay = baseDate.endOf('day').utc().toDate();
 
     const entries = await models.MoodEntry.findAll({
       where: {
@@ -154,7 +152,7 @@ class MoodEntryService {
     });
 
     if (entries.length === 0) {
-      return { average: 0, emoji: '😐', name: 'No hay emociones' }; // emoji neutro, por ejemplo
+      return { average: 0, emoji: '😐', name: 'No hay emociones' };
     }
 
     const sum = entries.reduce(
@@ -169,47 +167,38 @@ class MoodEntryService {
       name: getNameFromAverage(average),
     };
   }
-  async getAverageMoodGroupedByDateLocal(userId, timezone) {
+  async getAverageMoodGroupedByDateLocal(userId, timezone = 'UTC') {
     const entries = await models.MoodEntry.findAll({
       where: { user_id: userId },
-      attributes: [
-        [
-          literal(
-            `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
-          ),
-          'date',
-        ],
-        [fn('AVG', col('moodType.mood_score')), 'average'],
-      ],
-      include: [
-        {
-          model: models.MoodType,
-          as: 'moodType',
-          attributes: [],
-        },
-      ],
-      group: [
-        literal(
-          `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
-        ),
-      ],
-      order: [
-        literal(
-          `DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`,
-        ),
-      ],
-      raw: true,
+      include: {
+        model: models.MoodType,
+        as: 'moodType',
+        attributes: ['mood_score'],
+      },
     });
 
-    return entries.map((e) => {
-      const avg = parseFloat(parseFloat(e.average).toFixed(2));
-      return {
-        date: e.date,
-        average: avg,
-        emoji: getEmojiFromAverage(avg),
-        name: getNameFromAverage(avg),
-      };
-    });
+    const grouped = {};
+
+    for (const entry of entries) {
+      const localDate = dayjs(entry.created_at)
+        .tz(timezone)
+        .format('YYYY-MM-DD');
+      if (!grouped[localDate]) grouped[localDate] = [];
+      grouped[localDate].push(entry.moodType.mood_score);
+    }
+
+    return Object.entries(grouped)
+      .sort(([a], [b]) => dayjs(a).unix() - dayjs(b).unix())
+      .map(([date, scores]) => {
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const average = parseFloat(avg.toFixed(2));
+        return {
+          date,
+          average,
+          emoji: getEmojiFromAverage(average),
+          name: getNameFromAverage(average),
+        };
+      });
   }
 
   async findDistinctDates(userId) {
@@ -223,19 +212,16 @@ class MoodEntryService {
     return results; // [{ date: '2025-05-16' }, ...]
   }
 
-  // Devuelve las entradas de estado de ánimo para una fecha específica
-  // en formato ISO UTC (ejemplo: '2025-05-16T00:00:00Z')
   async findByDateFormatted(userId, isoDate, offsetMinutes = 0) {
-    // isoDate: 'YYYY-MM-DD' en la zona horaria del usuario
-    // offsetMinutes: diferencia con UTC en minutos (ejemplo: -300 para UTC-5)
+    // isoDate: string 'YYYY-MM-DD' en la zona horaria del usuario
+    // offsetMinutes: número (ej. -300 para UTC-5)
 
-    // Construimos la fecha local en la zona del usuario:
-    const localMidnight = new Date(`${isoDate}T00:00:00`);
+    // Construimos la fecha local usando el offset
+    const localMidnight = dayjs(`${isoDate}T00:00:00`).utcOffset(offsetMinutes);
 
-    // Calculamos el inicio y fin del día en UTC,
-    // compensando la diferencia de zona horaria
-    const utcStart = new Date(localMidnight.getTime() - offsetMinutes * 60000);
-    const utcEnd = new Date(utcStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+    // Convertimos a UTC para usar en la consulta SQL
+    const utcStart = localMidnight.utc().toDate();
+    const utcEnd = localMidnight.endOf('day').utc().toDate();
 
     const entries = await models.MoodEntry.findAll({
       where: {
@@ -249,7 +235,7 @@ class MoodEntryService {
     });
 
     return entries.map((e) => ({
-      timestamp: e.created_at.toISOString(), // UTC
+      timestamp: e.created_at.toISOString(), // UTC ISO
       emotion: e.moodType?.emoji || '',
       text: e.note,
     }));
@@ -259,32 +245,24 @@ class MoodEntryService {
     const rangeMap = { '1d': 1, '7d': 7, '30d': 30 };
     const days = rangeMap[range] || 7;
 
-    // Fecha base en UTC (o la que pase el cliente)
-    const baseDateUTC = clientDateISO ? new Date(clientDateISO) : new Date();
+    const baseDate = clientDateISO
+      ? dayjs.tz(clientDateISO, timezone)
+      : dayjs().tz(timezone);
 
-    // Convertir a fecha local en la zona horaria del usuario
-    const baseDateLocal = toZonedTime(baseDateUTC, timezone);
+    let startDate;
+    let endDate;
 
-    // Obtener string fecha base local en formato yyyy-MM-dd (día completo)
-    const baseDateStr = formatInTimeZone(baseDateLocal, timezone, 'yyyy-MM-dd');
+    if (range === '1d') {
+      startDate = baseDate.startOf('day');
+      endDate = baseDate.endOf('day');
+    } else {
+      startDate = baseDate.subtract(days - 1, 'day').startOf('day');
+      endDate = baseDate.endOf('day');
+    }
 
-    // Construir la fecha base local a medianoche (inicio del día) en la zona horaria
-    const baseMidnightLocal = fromZonedTime(
-      new Date(baseDateStr + 'T00:00:00'),
-      timezone,
-    );
+    const startUTC = startDate.utc().toDate();
+    const endUTC = endDate.utc().toDate();
 
-    // Calcular fecha de inicio restando (days - 1) días a la fecha base local a medianoche
-    // Como baseMidnightLocal es UTC equivalente a la zona horaria local, podemos restar ms directo
-    const startUTC = new Date(
-      baseMidnightLocal.getTime() - (days - 1) * 86400000,
-    );
-
-    // Fecha de fin será la fecha base local a las 23:59:59 en la zona horaria
-    const endDateStr = baseDateStr + 'T23:59:59';
-    const endUTC = fromZonedTime(new Date(endDateStr), timezone);
-
-    // Consultar la base de datos con el rango entre startUTC y endUTC
     const entries = await models.MoodEntry.findAll({
       where: {
         user_id: userId,
@@ -295,31 +273,36 @@ class MoodEntryService {
       include: ['moodType'],
     });
 
-    const grouped = {};
+    if (range === '1d') {
+      // Devuelve cada entrada individual con timestamp exacto (fecha+hora+minutos)
+      return entries
+        .map((entry) => {
+          const createdAtLocal = dayjs(entry.created_at).tz(timezone);
+          return {
+            date: createdAtLocal.format('YYYY-MM-DDTHH:mm:ss:SSS'),
+            [entry.moodType.name]: entry.moodType.mood_score,
+          };
+        })
+        .sort((a, b) => dayjs(a.date).toDate() - dayjs(b.date).toDate());
+    } else {
+      // Para 7d y 30d agrupar por día sumando scores por emoción
+      const grouped = {};
 
-    for (const entry of entries) {
-      // Convertir created_at UTC a fecha local en zona horaria
-      const createdAtLocal = toZonedTime(entry.created_at, timezone);
+      for (const entry of entries) {
+        const createdAtLocal = dayjs(entry.created_at).tz(timezone);
+        const key = createdAtLocal.format('YYYY-MM-DD');
 
-      // Clave de agrupación: por hora para 1d, por día para 7d y 30d
-      const key =
-        range === '1d'
-          ? formatInTimeZone(createdAtLocal, timezone, "yyyy-MM-dd'T'HH':00'")
-          : formatInTimeZone(createdAtLocal, timezone, 'yyyy-MM-dd');
+        const mood = entry.moodType.name;
+        const score = entry.moodType.mood_score;
 
-      const mood = entry.moodType.name;
-      const score = entry.moodType.mood_score;
+        if (!grouped[key]) grouped[key] = {};
+        grouped[key][mood] = (grouped[key][mood] || 0) + score;
+      }
 
-      if (!grouped[key]) grouped[key] = {};
-      grouped[key][mood] = (grouped[key][mood] || 0) + score;
+      return Object.entries(grouped)
+        .sort(([a], [b]) => dayjs(a).toDate() - dayjs(b).toDate())
+        .map(([date, moods]) => ({ date, ...moods }));
     }
-
-    // Ordenar resultados
-    const sortedEntries = Object.entries(grouped)
-      .sort(([a], [b]) => new Date(a) - new Date(b))
-      .map(([date, moods]) => ({ date, ...moods }));
-
-    return sortedEntries;
   }
 }
 
