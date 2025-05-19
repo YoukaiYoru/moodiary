@@ -153,10 +153,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     <Sidebar
       collapsible="offcanvas"
       className="bg-[#fdf6e3] text-[#3a2f2f] font-delius"
-      {...props}>
+      {...props}
+    >
       <SidebarContent className="">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-[#94461C] flex justify-center items-center h-20">Moodiary</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-[#94461C] flex justify-center items-center h-20">
+            Moodiary
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map(({ title, url, icon: Icon }) => (
@@ -239,10 +242,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       {/* Footer with UserButton */}
-      <SidebarFooter className="m-2 p-1 border-t transition duration-200 hover:bg-[#DEE6EC]/80 rounded-xl">
-        <UserButton
-          showName
-        />
+      <SidebarFooter className="m-2 p-1 border-t transition duration-200 hover:bg-[#DEE6EC]/80 w-">
+        <UserButton showName />
       </SidebarFooter>
     </Sidebar>
   );
