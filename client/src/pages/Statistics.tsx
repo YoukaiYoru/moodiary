@@ -286,7 +286,7 @@ export default function Statistics() {
       <div className="hidden md:grid grid-cols-5 gap-4 items-stretch">
         {/* Columna izquierda */}
         <div className="flex flex-col gap-4 col-span-2 lg:col-span-3">
-          <div className="flex flex-row items-center justify-evenly bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-4">
+          <div className="flex flex-row items-center justify-evenly h-1/3 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-4">
             {averageMood ? (
               <>
                 <div className="w-20 h-20 xl:w-24 xl:h-24 flex items-center justify-center rounded-full bg-red-100 text-4xl">

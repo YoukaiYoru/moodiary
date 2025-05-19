@@ -35,7 +35,7 @@ type Props = {
   data: DataItem[];
   config: ChartConfig;
   timeRange: string;
-  onRangeChange: (value: string) => void;
+  onRangeChange: (value: string) => string;
 };
 
 const TIME_RANGES = [
