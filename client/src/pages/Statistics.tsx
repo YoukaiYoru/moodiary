@@ -21,12 +21,10 @@ export default function Statistics() {
   const { getToken } = useAuth();
   const [phrase, setPhrase] = useState("No hay frase motivacional disponible");
   const [calendar, setCalendar] = useState<
-    | [
-        {
-          date: string;
-          emoji: string;
-        },
-      ]
+    | {
+        date: string;
+        emoji: string;
+      }[]
     | null
   >(null);
   const [averageMood, setAverageMood] = useState<{
@@ -81,14 +79,15 @@ export default function Statistics() {
 
         const localDateStr = dayjs().tz().format("YYYY-MM-DD");
 
-        const response = await api.get(
-          `/moods/average/today?date=${localDateStr}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.get(`/moods/average/today`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            date: localDateStr,
+            timezone: dayjs.tz.guess(), // Detecta la zona horaria
+          },
+        });
 
         setAverageMood(response.data);
       } catch (error: unknown) {
@@ -112,14 +111,18 @@ export default function Statistics() {
       try {
         const token = await getToken();
         if (!token) throw new Error("No token disponible");
-        const timezone = dayjs.tz.guess();
+
+        const timezone = dayjs.tz.guess(); // Detecta la zona horaria
+        const now = dayjs().tz(timezone); // Fecha local
 
         const response = await api.get(`/moods/average/by-date`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
           params: {
-            timezone: timezone,
+            timezone,
+            year: now.year(),
+            month: now.month() + 1, // month es 0-indexado → +1
           },
         });
 
@@ -128,6 +131,10 @@ export default function Statistics() {
         interface EmojiData {
           date: string;
           emoji: string;
+        }
+
+        if (!Array.isArray(rawData)) {
+          throw new Error("Respuesta inválida: se esperaba un arreglo");
         }
 
         const formattedData = rawData.map((item: EmojiData) => ({
@@ -221,8 +228,12 @@ export default function Statistics() {
             <EmojiCalendar
               dataDate={
                 calendar
-                  ? Object.fromEntries(
-                      calendar.map(({ date, emoji }) => [date, emoji])
+                  ? calendar.reduce(
+                      (acc, { date, emoji }) => {
+                        acc[date] = emoji;
+                        return acc;
+                      },
+                      {} as { [key: string]: string | undefined }
                     )
                   : {}
               }
