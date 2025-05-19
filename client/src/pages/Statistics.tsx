@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import { transformChartData } from "@/lib/transformChartData";
 import axios from "axios";
 import ChartEmotion from "@/components/ChartEmotion";
 import { Calendar } from "@ui/calendar";
@@ -8,21 +7,17 @@ import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { Skeleton } from "@/components/ui/skeleton";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-type DataItem = {
-  date: string;
-  Alegría?: number;
-  Calma?: number;
-  Ansiedad?: number;
-  Tristeza?: number;
-  Enojo?: number;
-};
-type ChartData = DataItem[];
-
 export default function Statistics() {
+  // Estados para loaders
+  const [loadingPhrase, setLoadingPhrase] = useState(true);
+  const [loadingAverageMood, setLoadingAverageMood] = useState(true);
+  const [loadingChart, setLoadingChart] = useState(true);
+
   const { getToken } = useAuth();
   const [phrase, setPhrase] = useState("No hay frase motivacional disponible");
   const [averageMood, setAverageMood] = useState<{
@@ -30,8 +25,22 @@ export default function Statistics() {
     emoji: string;
     name?: string;
   } | null>(null);
-  const [data, setData] = useState<ChartData>([]);
-  const [range, setRange] = useState<"1d" | "7d" | "30d">("1d");
+
+  //simulación de carga
+  useEffect(() => {
+    const phraseTimer = setTimeout(() => setLoadingPhrase(false), 1500);
+    const averageMoodTimer = setTimeout(
+      () => setLoadingAverageMood(false),
+      1500
+    );
+    const chartTimer = setTimeout(() => setLoadingChart(false), 1500);
+
+    return () => {
+      clearTimeout(phraseTimer);
+      clearTimeout(averageMoodTimer);
+      clearTimeout(chartTimer);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchMotivationalQuote() {
@@ -50,7 +59,7 @@ export default function Statistics() {
       }
     }
     fetchMotivationalQuote();
-  }, [getToken, range]);
+  }, [getToken]);
 
   useEffect(() => {
     const fetchAverageMood = async () => {
@@ -84,38 +93,6 @@ export default function Statistics() {
     fetchAverageMood();
   }, [getToken]);
 
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const token = await getToken();
-        if (!token) throw new Error("No token disponible");
-
-        const response = await api.get("/moods/chart", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            range: range,
-            date: new Date().toISOString(),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          },
-        });
-
-        const transformed = transformChartData(
-          response.data,
-          range,
-          Intl.DateTimeFormat().resolvedOptions().timeZone
-        );
-
-        setData(transformed);
-      } catch (error) {
-        console.error("Error fetching chart data:", error);
-      }
-    };
-
-    fetchChartData();
-  }, [getToken, range]);
-
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 text-center">
@@ -125,16 +102,24 @@ export default function Statistics() {
       {/* Header con frase motivacional y promedio */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
         <div className="sm:col-span-2 flex justify-center sm:justify-start items-center border border-red-500 h-full rounded-2xl">
-          <h2 className="text-2xl font-semibold text-red-600 text-center m-4">
-            {phrase}
-          </h2>
+          {loadingPhrase ? (
+            <div className="space-y-2 p-4 max-w-xl w-full mx-auto">
+              <Skeleton className="h-6 w-3/4 mx-auto rounded" />
+              <Skeleton className="h-6 w-1/2 mx-auto rounded" />
+            </div>
+          ) : (
+            <h2 className="text-2xl font-semibold text-red-600 text-center m-4">
+              {phrase}
+            </h2>
+          )}
         </div>
 
         <div className="flex flex-col items-center border border-red-500 rounded-2xl p-6 shadow-lg bg-white min-h-[200px] justify-center">
-          {averageMood === null ? (
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin mb-4" />
-              <span className="text-gray-500">Cargando...</span>
+          {averageMood === null && loadingAverageMood ? (
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <Skeleton className="rounded-full w-28 h-28 shadow-inner" />
+              <Skeleton className="h-6 w-24 rounded" />
+              <Skeleton className="h-4 w-20 rounded" />
             </div>
           ) : (
             <>
@@ -159,13 +144,15 @@ export default function Statistics() {
 
       {/* Gráfico + Calendario */}
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 max-h-[500px] overflow-auto">
-          <ChartEmotion
-          // title="Emociones vs Tiempo"
-          // description="Mira lo hermoso que es tu evolución emocional"
-          // data={data}
-          // range={range}
-          />
+        <div className="w-full lg:w-3/4 flex flex-col border border-red-500 rounded-2xl p-4 shadow-sm">
+          {loadingChart ? (
+            <Skeleton className="h-[320px] w-full rounded-xl" />
+          ) : (
+            <ChartEmotion
+              title="Emociones vs Tiempo"
+              description="Mira lo hermoso que es tu evolución emocional"
+            />
+          )}
         </div>
 
         <div className="w-full lg:w-1/4 flex flex-col border border-red-500 rounded-2xl p-4 shadow-sm">

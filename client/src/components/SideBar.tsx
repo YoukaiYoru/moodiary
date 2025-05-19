@@ -1,16 +1,9 @@
 import React from "react";
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
-import {
-  Home,
-  BarChart2,
-  Notebook,
-  ChevronDown,
-  FileText,
-  Search,
-} from "lucide-react";
-import { NavLink } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
+import { NavLink } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -34,86 +27,123 @@ import { Button } from "@ui/button";
 import { Calendar } from "@ui/calendar";
 import { UserButton } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
+import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
+
+// Import icons
+import {
+  Home,
+  BarChart2,
+  FileText,
+  Notebook,
+  ChevronDown,
+  Search,
+} from "lucide-react";
+
+dayjs.extend(timezone);
 
 const mainItems = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Estadísticas", url: "/dashboard/stats", icon: BarChart2 },
 ];
 
-interface NoteGroup {
-  date: string;
-}
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
-  const [noteItems, setNoteItems] = React.useState<NoteGroup[]>([]);
+  const [notes, setNotes] = React.useState<string[]>([]);
+  const context = React.use(NoteUpdateContext);
+  if (!context)
+    throw new Error("AppSidebar must be used within NoteDatesProvider");
+  const { knownDates, triggerNoteUpdate } = context;
   const hasFetchedRef = React.useRef(false);
 
-  const fetchNotes = React.useCallback(async () => {
+  const fetchDates = React.useCallback(async () => {
     try {
       const token = await getToken();
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await api.get("/moods/dates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      interface MoodItem {
-        created_at: string;
-      }
-
-      const newDates = (response.data as MoodItem[]).map((item) =>
-        dayjs(item.created_at).tz().format("YYYY-MM-DD")
+      const newDates = Array.from(
+        new Set(
+          response.data.map((item: { created_at: string }) =>
+            dayjs(item.created_at).tz().format("YYYY-MM-DD")
+          )
+        )
       );
 
-      const uniqueDates = Array.from(new Set(newDates));
-
-      const newNoteItems = uniqueDates.map((date) => ({ date }));
-
-      // Solo actualiza si hay nuevos datos
-      setNoteItems((prev) => {
-        const prevDates = new Set(prev.map((n) => n.date));
-        const hasNew = newNoteItems.some((n) => !prevDates.has(n.date));
-        return hasNew ? newNoteItems : prev;
-      });
+      const sortedPrev = Array.from(knownDates).sort();
+      const sortedNew = [...newDates].sort();
+      const isEqual =
+        sortedPrev.length === sortedNew.length &&
+        sortedPrev.every((v, i) => v === sortedNew[i]);
+      if (!isEqual) {
+        newDates.forEach((d) => triggerNoteUpdate(d as string));
+      }
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
-  }, [getToken]);
+  }, [getToken, knownDates, triggerNoteUpdate]);
 
   React.useEffect(() => {
     if (!hasFetchedRef.current) {
-      fetchNotes();
+      fetchDates();
       hasFetchedRef.current = true;
     }
-  }, [fetchNotes]);
+  }, [fetchDates]);
 
+  React.useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await api.get("/moods/dates", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const groupedNotes = response.data.reduce(
+          (
+            acc: Record<string, string[]>,
+            note: { created_at: string; content: string }
+          ) => {
+            const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
+            if (!acc[noteDate]) acc[noteDate] = [];
+            acc[noteDate].push(note.content);
+            return acc;
+          },
+          {}
+        );
+
+        const groupedDates = Object.keys(groupedNotes).sort().reverse();
+        setNotes(groupedDates);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      }
+    };
+
+    fetchNotes();
+  }, [getToken]);
+
+  // Filtrar notas si hay fecha seleccionada
   const filteredNotes = date
-    ? noteItems.filter((group) => dayjs(group.date).isSame(dayjs(date), "day"))
-    : noteItems;
+    ? notes.filter((d) => d === dayjs(date).format("YYYY-MM-DD"))
+    : notes;
 
-  const renderNoteLinks = () =>
-    filteredNotes.map((group) => (
-      <SidebarMenuSubItem key={group.date}>
+  // Renderizar enlaces filtrados (solo uno)
+  const renderNotes = () =>
+    filteredNotes.map((note) => (
+      <SidebarMenuSubItem key={note}>
         <SidebarMenuButton asChild>
           <NavLink
-            to={`/dashboard/notes/${group.date}`}
+            to={`/dashboard/notes/${note}`}
             className={({ isActive }) =>
-              cn(
-                isActive
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground"
-              )
+              isActive ? "text-primary font-semibold" : "text-muted-foreground"
             }
           >
             <FileText className="mr-2 h-4 w-4" />
-            {group.date}
+            {note}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuSubItem>
@@ -194,7 +224,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         </Button>
                       )}
 
-                      {renderNoteLinks()}
+                      {/* Solo un listado y filtrado */}
+                      {renderNotes()}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>

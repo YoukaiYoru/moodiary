@@ -1,9 +1,11 @@
+import React, { useState } from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type React from "react";
-import { useState } from "react";
 import { TiLocationArrowOutline } from "react-icons/ti";
 import confetti from "canvas-confetti";
 import {
@@ -14,6 +16,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function HomeLogin() {
   const { getToken } = useAuth();
@@ -21,6 +27,11 @@ export default function HomeLogin() {
   const [text, setText] = useState("");
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const context = React.use(NoteUpdateContext);
+  if (!context)
+    throw new Error("HomeLogin must be used within NoteDatesProvider");
+  const { addDate } = context;
 
   const emojis = [
     { emoji: "😄", value: "Alegría" },
@@ -40,7 +51,7 @@ export default function HomeLogin() {
 
   const max_length = 250;
   const total_chars = text.length;
-  const words = text.trim() === "" ? 0 : text.split(/\s+/).length;
+  const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
   const remaining = max_length - total_chars;
 
   const wordCounter = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -56,7 +67,7 @@ export default function HomeLogin() {
       if (!token)
         throw new Error("No se pudo obtener el token de autenticación.");
 
-      await api.post(
+      const res = await api.post(
         "/moods",
         {
           mood: selectedEmoji,
@@ -69,6 +80,13 @@ export default function HomeLogin() {
           },
         }
       );
+
+      // Extraer y formatear fecha local correctamente
+      const createdAt = res.data.created_at || new Date().toISOString();
+      const localDate = dayjs(createdAt).tz().format("YYYY-MM-DD");
+
+      // Disparar actualización en sidebar
+      addDate(localDate);
 
       setText("");
       setSelectedEmoji(null);
@@ -131,6 +149,8 @@ export default function HomeLogin() {
                         ${selectedEmoji === value ? "scale-150" : ""}
                         ${bounceEmoji === value ? "animate-bounce" : ""}`}
                       onClick={() => handleEmojiClick(value)}
+                      aria-label={value}
+                      type="button"
                     >
                       {emoji}
                     </button>
@@ -163,6 +183,7 @@ export default function HomeLogin() {
               title="Enviar"
               onClick={handleSubmit}
               disabled={!text.trim() || !selectedEmoji || submitting}
+              type="button"
             >
               <TiLocationArrowOutline />
             </Button>
@@ -179,6 +200,7 @@ export default function HomeLogin() {
             variant="outline"
             className="mt-2 shadow-amber-100 cursor-pointer hover:shadow hover:scale-110"
             onClick={handleConfetti}
+            type="button"
           >
             ¡Boom emocional!
           </Button>
