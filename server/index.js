@@ -30,7 +30,8 @@ const port = process.env.PORT || 3000;
 // CORS Configuration
 const whitelist = [
   'http://localhost:5001',
-  'https://myapp.com',
+  'https://www.moodiary.live',
+  'https://moodiary.live',
   'http://localhost:3000',
   'http://localhost:5173',
 ];
@@ -64,7 +65,7 @@ app.use(errorHandler);
     console.log('✅ Conexión a la base de datos establecida.');
 
     app.listen(port, () => {
-      console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
+      console.log(`🚀 Servidor escuchando`);
     });
   } catch (err) {
     console.error('❌ Error al iniciar la app:', err);

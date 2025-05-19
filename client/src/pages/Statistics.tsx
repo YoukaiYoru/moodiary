@@ -89,7 +89,7 @@ export default function Statistics() {
           },
         });
 
-        setAverageMood(response.data);
+        setAverageMood(response.data || []);
       } catch (error: unknown) {
         let message = "Error desconocido";
         if (axios.isAxiosError(error)) {
@@ -142,7 +142,7 @@ export default function Statistics() {
           emoji: item.emoji,
         }));
 
-        setCalendar(formattedData);
+        setCalendar(formattedData || []);
       } catch (error: unknown) {
         let message = "Error desconocido";
         if (axios.isAxiosError(error)) {
