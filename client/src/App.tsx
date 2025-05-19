@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import HomeLogin from "./pages/HomeLogin";
 import Statistics from "./pages/Statistics";
 import MoodNotes from "./pages/MoodNotes";
+import EmojiCalendar from "./components/EmojiCalendar";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route index element={<HomeLogin />} />
         <Route path="stats" element={<Statistics />} />
         <Route path="notes/:id" element={<MoodNotes />} />
+        <Route path="test" element={<EmojiCalendar />} />
       </Route>
     </Routes>
   );

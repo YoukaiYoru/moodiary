@@ -150,10 +150,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     ));
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarContent>
+    <Sidebar
+      collapsible="offcanvas"
+      className="bg-[#fdf6e3] text-[#3a2f2f] font-delius"
+      {...props}>
+      <SidebarContent className="">
         <SidebarGroup>
-          <SidebarGroupLabel>Moodiary</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-[#94461C] flex justify-center items-center h-20">Moodiary</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map(({ title, url, icon: Icon }) => (
@@ -217,7 +220,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="mt-2 w-full"
+                          className="mt-2 w-full text-orange-600 hover:text-orange-400 dark:text-red-800 dark:hover:text-red-600"
                           onClick={() => setDate(undefined)}
                         >
                           Limpiar búsqueda
@@ -235,8 +238,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="flex items-center justify-center p-4 border-t">
-        <UserButton showName />
+      {/* Footer with UserButton */}
+      <SidebarFooter className="m-2 p-1 border-t transition duration-200 hover:bg-[#DEE6EC]/80 rounded-xl">
+        <UserButton
+          showName
+        />
       </SidebarFooter>
     </Sidebar>
   );
