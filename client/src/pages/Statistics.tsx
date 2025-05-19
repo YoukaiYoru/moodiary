@@ -128,22 +128,26 @@ export default function Statistics() {
 
         const rawData = response.data;
 
+        if (!Array.isArray(rawData)) {
+          throw new Error("Respuesta inválida: se esperaba un arreglo");
+        }
+
+        // Usamos forEach en vez de map
         interface EmojiData {
           date: string;
           emoji: string;
         }
 
-        if (!Array.isArray(rawData)) {
-          throw new Error("Respuesta inválida: se esperaba un arreglo");
-        }
-
-        const formattedData = rawData.map((item: EmojiData) => ({
-          date: item.date,
-          emoji: item.emoji,
-        }));
+        const formattedData: EmojiData[] = [];
+        rawData.forEach((item) => {
+          formattedData.push({
+            date: item.date,
+            emoji: item.emoji,
+          });
+        });
 
         setCalendar(formattedData || []);
-      } catch (error: unknown) {
+      } catch (error) {
         let message = "Error desconocido";
         if (axios.isAxiosError(error)) {
           message = error.response?.data?.error || error.message;
@@ -226,17 +230,15 @@ export default function Statistics() {
         <div className="xl:col-span-1 w-full flex justify-center mx-auto xl:mx-0 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-sm p-5">
           <div className="max-w-xs w-full">
             <EmojiCalendar
-              dataDate={
-                calendar
-                  ? calendar.reduce(
-                      (acc, { date, emoji }) => {
-                        acc[date] = emoji;
-                        return acc;
-                      },
-                      {} as { [key: string]: string | undefined }
-                    )
-                  : {}
-              }
+              dataDate={(() => {
+                const obj: Record<string, string> = {};
+                if (calendar) {
+                  calendar.forEach(({ date, emoji }) => {
+                    obj[date] = emoji;
+                  });
+                }
+                return obj;
+              })()}
             />
           </div>
         </div>
