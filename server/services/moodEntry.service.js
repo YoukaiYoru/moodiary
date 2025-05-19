@@ -222,15 +222,12 @@ class MoodEntryService {
   }
 
   async findByDateFormatted(userId, isoDate, offsetMinutes = 0) {
-    // isoDate: string 'YYYY-MM-DD' en la zona horaria del usuario
-    // offsetMinutes: número (ej. -300 para UTC-5)
-
-    // Construimos la fecha local usando el offset
+    // Fecha local interpretada con offset manual (sin zona)
     const localMidnight = dayjs(`${isoDate}T00:00:00`).utcOffset(offsetMinutes);
 
-    // Convertimos a UTC para usar en la consulta SQL
+    // Construir UTC start y end correctos
     const utcStart = localMidnight.utc().toDate();
-    const utcEnd = localMidnight.endOf('day').utc().toDate();
+    const utcEnd = localMidnight.add(1, 'day').utc().toDate(); // ← FIX
 
     const entries = await models.MoodEntry.findAll({
       where: {
@@ -244,7 +241,7 @@ class MoodEntryService {
     });
 
     return entries.map((e) => ({
-      timestamp: e.created_at.toISOString(), // UTC ISO
+      timestamp: e.created_at.toISOString(),
       emotion: e.moodType?.emoji || '',
       text: e.note,
     }));
