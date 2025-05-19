@@ -29,7 +29,7 @@ export default function HomeLogin() {
   }
 
   // Contador de caracteres
-  const max_length = 250;
+  const max_length = 500;
   const total_chars = text.length;
   const words = text.trim() === '' ? 0 : text.split(/\s+/).length;
   const remaining = max_length - total_chars;
@@ -77,17 +77,17 @@ export default function HomeLogin() {
 
   return (
     <>
-      <h1 className="text-2xl font-light">Bienvenido al Dashboard</h1>
-      <div className='flex justify-center items-center min-h-[80vh]'>
-        <section className="container flex flex-col justify-center items-center">
-          <h1 className="font-dosis font-light text-5xl pt-4 pb-4" >¿Cómo te sientes hoy? 🫣</h1>
+      <h1 className="text-2xl font-light text-center lg:text-left mt-4">Bienvenido al Dashboard</h1>
+      <div className='flex justify-center items-center min-h-[80vh] px-4'>
+        <section className="w-full max-w-3xl flex flex-col justify-center items-center">
+          <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center pt-4 pb-6" >¿Cómo te sientes hoy? 🫣</h1>
           <TooltipProvider>
-            <div className='flex justify-center items-center'>
+            <div className='flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth'>
               {emojis.map(({ emoji, value }) => (
                 <Tooltip key={value}>
                   <TooltipTrigger asChild>
                     <button
-                      className={`emoji-button transition duration-200 transform
+                      className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
                         ${selectedEmoji === value ? 'scale-150' : ''}
                         ${bounceEmoji === value ? 'animate-bounce' : ''}`}
                       onClick={() => handleEmojiClick(value)}
@@ -102,10 +102,10 @@ export default function HomeLogin() {
               ))}
             </div>
           </TooltipProvider>
-          <div className="relative w-[60vw] mt-6">
+          <div className="relative w-full sm:w-[60w] mt-6">
             <Textarea
-              className="min-h-[50px] w-full pr-16 rounded-2xl border-none text-lg sm:text-lg md:text-xl placeholder:text-xl shadow-lg
-                        resize-none overflow-hidden backdrop-blur-2xl"
+              className="min-h-[50px] w-full pr-14 rounded-2xl border-none text-base sm:text-lg md:text-xl placeholder:text-base md:placeholder:text-xl shadow-lg
+                        resize-none overflow-hidden bg-[#F2F4F4]/80 backdrop-blur-2xl"
               placeholder="Escribe cómo te sientes hoy... Ej: Me siento agradecido y con energía"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -117,25 +117,33 @@ export default function HomeLogin() {
               maxLength={max_length}
               onKeyDown={handleKeyDown}
             />
-            <Button
-              className='absolute top-[50%] right-4 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer'
-              title='Enviar'
-              onClick={handleSubmit}
-            >
-              <TiLocationArrowOutline />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className='absolute top-[50%] right-2 sm:right-4 md:right-4 xl:right-4 bg-[#455763] hover:bg-[#455763]/90 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer'
+                    onClick={handleSubmit}
+                  >
+                    <TiLocationArrowOutline />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Enviar
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {/* Contadores */}
-          <div className='flex justify-end items-center w-[60vw] mt-4'>
-            <p className='text-sm font-dosis px-2'>Palabras: {words}</p>
-            <p className='text-sm font-dosis px-2'>Caracteres: {total_chars}/{remaining}</p>
+          <div className='flex justify-end items-center w-full mt-4 text-sm font-dosis px-2'>
+            <p>Palabras: {words}&nbsp;</p>
+            <p>&nbsp;Caracteres: {total_chars}/{remaining}</p>
           </div>
           <Button
             variant="outline"
-            className='mt-2 shadow-amber-100 cursor-pointer hover:shadow hover:scale-110'
+            className="mt-4 shadow-amber-100 cursor-pointer border-[#8b6f31] text-[rgb(78,73,29)] hover:bg-[#8b6f31]/10 hover:shadow hover:scale-105 transition-transform"
             onClick={handleConfetti}
           >
-            ¡Boom emocional!
+            ¡Fue un buen día!
           </Button>
         </section>
       </div>

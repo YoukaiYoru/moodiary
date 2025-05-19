@@ -42,15 +42,15 @@ export default function MoodNotes() {
   return (
     <>
       <div className="max-w-7xl mx-auto p-4 space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-center">
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900 text-center">
           Notas de estado de ánimo
         </h1>
-        <p className="text-center">
-          Tus emociones de la fecha: <b>{params.id}</b>{" "}
+        <p className="text-center text-sm">
+          Tus emociones de la fecha: <br className="block md:hidden"/> <span className="hidden md:inline"></span> <b>{params.id}</b>{" "}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 place-items-center gap-4 p-4">
+      <div className="grid grid-cols-1 place-items-center gap-4 p-4 text-sm md:text-base">
         {DatesFromParam.map((note, index) => (
           <Notes
             key={index}

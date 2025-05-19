@@ -29,7 +29,7 @@ export default function Notes({ hour, emotion, text }: Props) {
   }, [expanded, text]);
 
   return (
-    <div className="flex items-start justify-between p-4 bg-white shadow-md rounded-lg w-full max-w-2xl mb-4 transition-all duration-500">
+    <div className="flex items-start justify-between p-4 bg-white shadow-md rounded-lg w-[110%] max-w-2xl mb-4 transition-all duration-500">
       {/* Parte izquierda */}
       <div className="flex flex-col flex-1">
         <span className="text-sm text-gray-500">{hour}</span>

@@ -1,7 +1,6 @@
 import ChartEmotion from "@/components/ChartEmotion";
-import { Calendar } from "@ui/calendar";
+import EmojiCalendar from "../components/EmojiCalendar";
 
-//Data de ejemplo para el gráfico
 const chartData = Array.from({ length: 30 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - i);
@@ -21,9 +20,7 @@ const chartData = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-const imageURL = "/src/assets/happy.webp"; // URL de la imagen del emoji
-
-// Fechas con emojis
+const imageURL = "/src/assets/happy.webp";
 
 const chartConfig = {
   Alegría: { label: "Alegría", color: "var(--chart-1)" },
@@ -38,47 +35,84 @@ const phrase =
 
 export default function Statistics() {
   return (
-    <div className=" space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900 text-center">
+    // Sexta idea
+    <div className="space-y-6 px-1 sm:px-4 pb-8">
+      <h1 className="text-3xl font-dosis tracking-wider font-semibold text-gray-900 dark:text-white text-center">
         Mira tu evolución emocional
       </h1>
 
-      {/* Header Row with Title + Image */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-        {/* Text (spans 2 on larger screens) */}
-        <div className="sm:col-span-2 flex justify-center sm:justify-start items-center border border-red-500 h-full rounded-2xl">
-          <h2 className="text-2xl font-semibold text-red-600 text-center m-4">
+      {/* Móvil: Emoji y Calendario en fila */}
+      <div className="flex flex-col gap-4 md:hidden">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Emoji */}
+          <div className="flex-1 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-2 sm:p-4 flex flex-col items-center justify-center h-32 sm:h-auto">
+            <img
+              src={imageURL}
+              alt="Emoji"
+              className="w-10 h-10 md:w-20 md:h-20 object-cover rounded-full mb-2"
+            />
+            <p className="text-sm text-gray-700 dark:text-gray-200 text-center">
+              Estado más frecuente
+            </p>
+          </div>
+
+          {/* Calendario */}
+          <div className="flex-1 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-2 sm:p-4 h-32 sm:h-auto flex justify-center items-center">
+            <div className="scale-75 h-92 sm:scale-75 origin-top pt-4">
+              <EmojiCalendar />
+            </div>
+          </div>
+        </div>
+
+        {/* Frase */}
+        <div className="bg-white dark:bg-[#1F1F1F] flex items-center text-center p-6 rounded-2xl shadow-md border">
+          <h2 className="font-lobster text-md p-0 text-[hsl(204,18%,20%)] dark:text-white">
             {phrase}
           </h2>
         </div>
+      </div>
 
-        {/* Image + Label */}
-        <div className="flex flex-col items-center border border-red-500 rounded-2xl p-4 shadow-sm">
-          <img
-            src={imageURL}
-            alt="Example"
-            className="w-20 h-20 object-cover rounded-full mb-2"
-          />
-          <p className="text-sm text-gray-700 text-center">Image label</p>
+      {/* Escritorio: Emoji + Frase a la izquierda, Calendario a la derecha */}
+      <div className="hidden md:grid grid-cols-5 gap-4 items-stretch">
+        {/* Columna izquierda: Emoji y frase */}
+        <div className="flex flex-col gap-4 col-span-2 lg:col-span-3 h-full">
+          {/* Emoji */}
+          <div className="flex flex-row items-center justify-evenly h-1/3 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-4">
+            <img
+              src={imageURL}
+              alt="Emoji"
+              className="w-20 h-20 xl:w-24 xl:h-24 object-cover rounded-full mb-2"
+            />
+            <p className="text-xl text-gray-700 dark:text-gray-200 text-center">
+              Estado más frecuente
+            </p>
+          </div>
+        
+          {/* Frase */}
+          <div className="bg-white dark:bg-[#1F1F1F] flex items-center text-center p-6 rounded-2xl shadow-md h-2/3 border">
+            <h2 className="font-lobster text-4xl md:text-2xl lg:text-3xl p-4 text-[hsl(204,18%,20%)] dark:text-white font-semibold leading-snug">
+              {phrase}
+            </h2>
+          </div>
+        </div>
+
+        {/* Columna derecha: Calendario */}
+        <div className="bg-white dark:bg-[#1F1F1F] col-span-3 lg:col-span-2 rounded-2xl shadow-md p-6 h-full">
+          <div className="scale-150 md:scale-100 lg:scale-110 lg:pt-3">
+            <EmojiCalendar />
+          </div>
         </div>
       </div>
 
-      {/* Chart + Calendar Section */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 max-h-[500px] overflow-auto">
-          <ChartEmotion
-            title="Emociones vs Tiempo"
-            description="Mira lo hermoso que es tu evolución emocional"
-            data={chartData}
-            config={chartConfig}
-            referenceDate={new Date().toISOString().split("T")[0]}
-          />
-        </div>
-        <div className="w-full lg:w-1/4 flex flex-col border border-red-500 rounded-2xl p-4 shadow-sm">
-          <div className="flex-1">
-            <Calendar />
-          </div>
-        </div>
+      {/* Gráfico debajo vista escritorio */}
+      <div className=" bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-md p-2 max-h-[500px] overflow-auto">
+        <ChartEmotion
+          title="Emociones vs Tiempo"
+          description="Mira lo hermoso que es tu evolución emocional"
+          data={chartData}
+          config={chartConfig}
+          referenceDate={new Date().toISOString().split("T")[0]}
+        />
       </div>
     </div>
   );
