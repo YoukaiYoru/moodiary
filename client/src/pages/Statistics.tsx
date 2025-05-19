@@ -1,99 +1,38 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
+import { transformChartData } from "@/lib/transformChartData";
 import axios from "axios";
 import ChartEmotion from "@/components/ChartEmotion";
 import { Calendar } from "@ui/calendar";
 import { useAuth } from "@clerk/clerk-react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
-const chartConfig = {
-  Alegría: { label: "Alegría", color: "var(--chart-1)" },
-  Calma: { label: "Calma", color: "var(--chart-2)" },
-  Ansiedad: { label: "Ansiedad", color: "var(--chart-3)" },
-  Tristeza: { label: "Tristeza", color: "var(--chart-4)" },
-  Enojo: { label: "Enojo", color: "var(--chart-5)" },
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+type DataItem = {
+  date: string;
+  Alegría?: number;
+  Calma?: number;
+  Ansiedad?: number;
+  Tristeza?: number;
+  Enojo?: number;
 };
+type ChartData = DataItem[];
 
 export default function Statistics() {
-  const [timeRange, setTimeRange] = useState<"1d" | "7d" | "30d">("1d");
   const { getToken } = useAuth();
-  const [chartData, setChartData] = useState([]);
   const [phrase, setPhrase] = useState("No hay frase motivacional disponible");
   const [averageMood, setAverageMood] = useState<{
     average: number;
     emoji: string;
     name?: string;
   } | null>(null);
+  const [data, setData] = useState<ChartData>([]);
+  const [range, setRange] = useState<"1d" | "7d" | "30d">("1d");
 
-  // useEffect para traer los datos del gráfico
-  useEffect(() => {
-    async function fetchChartData() {
-      try {
-        const token = await getToken();
-        if (!token) throw new Error("No token disponible");
-
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const now = new Date();
-
-        let dateFrom: Date;
-
-        if (timeRange === "1d") {
-          // Desde 00:00:00 hasta 23:59:59 del día actual, en hora local
-          dateFrom = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            0,
-            0,
-            0,
-            0
-          );
-        } else if (timeRange === "7d") {
-          // Desde 6 días antes a hoy (7 días total)
-          dateFrom = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() - 6,
-            0,
-            0,
-            0,
-            0
-          );
-        } else {
-          // 30 días antes a hoy
-          dateFrom = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() - 29,
-            0,
-            0,
-            0,
-            0
-          );
-        }
-
-        const dateParam = dateFrom.toISOString();
-
-        const response = await api.get("/moods/chart", {
-          params: {
-            range: timeRange,
-            date: dateParam,
-            timezone,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setChartData(response.data);
-      } catch (error) {
-        console.error("Error fetching chart data:", error);
-      }
-    }
-
-    fetchChartData();
-  }, [getToken, timeRange]);
-
-  // useEffect para traer la frase motivacional
   useEffect(() => {
     async function fetchMotivationalQuote() {
       try {
@@ -111,21 +50,15 @@ export default function Statistics() {
       }
     }
     fetchMotivationalQuote();
-  }, [getToken]);
+  }, [getToken, range]);
 
-  // useEffect para traer el estado de ánimo promedio
   useEffect(() => {
     const fetchAverageMood = async () => {
       try {
         const token = await getToken();
         if (!token) throw new Error("No token disponible");
 
-        const now = new Date();
-
-        // Convertir a string ISO local y extraer solo la parte de la fecha (YYYY-MM-DD)
-        const localDateStr = now.toLocaleDateString("en-CA", {
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        });
+        const localDateStr = dayjs().tz().format("YYYY-MM-DD");
 
         const response = await api.get(
           `/moods/average/today?date=${localDateStr}`,
@@ -151,13 +84,45 @@ export default function Statistics() {
     fetchAverageMood();
   }, [getToken]);
 
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("No token disponible");
+
+        const response = await api.get("/moods/chart", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            range: range,
+            date: new Date().toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+        });
+
+        const transformed = transformChartData(
+          response.data,
+          range,
+          Intl.DateTimeFormat().resolvedOptions().timeZone
+        );
+
+        setData(transformed);
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
+      }
+    };
+
+    fetchChartData();
+  }, [getToken, range]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 text-center">
         Mira tu evolución emocional
       </h1>
 
-      {/* Header Row with Title + Image */}
+      {/* Header con frase motivacional y promedio */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
         <div className="sm:col-span-2 flex justify-center sm:justify-start items-center border border-red-500 h-full rounded-2xl">
           <h2 className="text-2xl font-semibold text-red-600 text-center m-4">
@@ -192,18 +157,14 @@ export default function Statistics() {
         </div>
       </div>
 
-      {/* Chart + Calendar Section */}
+      {/* Gráfico + Calendario */}
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 max-h-[500px] overflow-auto">
           <ChartEmotion
-            title="Emociones vs Tiempo"
-            description="Mira lo hermoso que es tu evolución emocional"
-            data={chartData}
-            config={chartConfig}
-            timeRange={timeRange}
-            onRangeChange={(value) =>
-              setTimeRange(value as "1d" | "7d" | "30d")
-            }
+          // title="Emociones vs Tiempo"
+          // description="Mira lo hermoso que es tu evolución emocional"
+          // data={data}
+          // range={range}
           />
         </div>
 

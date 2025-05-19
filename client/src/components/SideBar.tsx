@@ -1,4 +1,5 @@
 import React from "react";
+import dayjs from "dayjs";
 import api from "@/lib/axios";
 import {
   Home,
@@ -9,9 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { format } from "date-fns";
 import { useAuth } from "@clerk/clerk-react";
-
 import {
   Sidebar,
   SidebarContent,
@@ -49,7 +48,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
   const [noteItems, setNoteItems] = React.useState<NoteGroup[]>([]);
-  const [isNotesOpen, setIsNotesOpen] = React.useState(true);
+  const hasFetchedRef = React.useRef(false);
 
   const fetchNotes = React.useCallback(async () => {
     try {
@@ -65,50 +64,38 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         },
       });
 
-      // Detectar la zona horaria del cliente automáticamente
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
       interface MoodItem {
         created_at: string;
       }
 
-      interface GroupedNotes {
-        [date: string]: MoodItem[];
-      }
-
-      const grouped: GroupedNotes = (response.data as MoodItem[]).reduce(
-        (acc: GroupedNotes, item: MoodItem) => {
-          const localDate = new Date(item.created_at).toLocaleDateString(
-            "en-CA",
-            {
-              timeZone: userTimeZone,
-            }
-          ); // ej: "2025-05-17"
-
-          if (!acc[localDate]) acc[localDate] = [];
-          acc[localDate].push(item);
-
-          return acc;
-        },
-        {}
+      const newDates = (response.data as MoodItem[]).map((item) =>
+        dayjs(item.created_at).tz().format("YYYY-MM-DD")
       );
 
-      const localDates = Object.keys(grouped);
+      const uniqueDates = Array.from(new Set(newDates));
 
-      setNoteItems(localDates.map((date) => ({ date }))); // O `grouped` si necesitas los items
+      const newNoteItems = uniqueDates.map((date) => ({ date }));
+
+      // Solo actualiza si hay nuevos datos
+      setNoteItems((prev) => {
+        const prevDates = new Set(prev.map((n) => n.date));
+        const hasNew = newNoteItems.some((n) => !prevDates.has(n.date));
+        return hasNew ? newNoteItems : prev;
+      });
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
   }, [getToken]);
 
   React.useEffect(() => {
-    if (!isNotesOpen) {
+    if (!hasFetchedRef.current) {
       fetchNotes();
+      hasFetchedRef.current = true;
     }
-  }, [isNotesOpen, fetchNotes]);
+  }, [fetchNotes]);
 
   const filteredNotes = date
-    ? noteItems.filter((group) => group.date === format(date, "yyyy-MM-dd"))
+    ? noteItems.filter((group) => dayjs(group.date).isSame(dayjs(date), "day"))
     : noteItems;
 
   const renderNoteLinks = () =>
@@ -159,14 +146,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuItem>
               ))}
 
-              <Collapsible
-                defaultOpen
-                onOpenChange={(open) => setIsNotesOpen(open)}
-                className="group/collapsible"
-              >
+              <Collapsible defaultOpen className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="hover:cursor-pointer">
                       <Notebook className="mr-2 h-4 w-4" />
                       Notes
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
@@ -185,7 +168,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                             )}
                           >
                             <Search className="mr-2 h-4 w-4" />
-                            {date ? format(date, "PPP") : "Buscar por fecha"}
+                            {date
+                              ? dayjs(date).format("LL")
+                              : "Buscar por fecha"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
