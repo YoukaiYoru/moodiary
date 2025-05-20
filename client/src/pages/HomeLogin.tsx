@@ -135,14 +135,14 @@ export default function HomeLogin() {
           </h1>
           <TooltipProvider>
             <div className="flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth">
-              <Tooltip key="Alegria">
+              <Tooltip key="Alegría">
                 <TooltipTrigger asChild>
                   <button
                     className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Alegria" ? "scale-150" : ""}
-                  ${bounceEmoji === "Alegria" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Alegria")}
-                    aria-label="Alegria"
+                  ${selectedEmoji === "Alegría" ? "scale-150" : ""}
+                  ${bounceEmoji === "Alegría" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Alegría")}
+                    aria-label="Alegría"
                     type="button"
                   >
                     😄
