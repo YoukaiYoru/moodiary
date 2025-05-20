@@ -33,14 +33,6 @@ export default function HomeLogin() {
     throw new Error("HomeLogin must be used within NoteDatesProvider");
   const { addDate } = context;
 
-  const emojis = [
-    { emoji: "😄", value: "Alegria" },
-    { emoji: "😰", value: "Ansiedad" },
-    { emoji: "😢", value: "Tristeza" },
-    { emoji: "😌", value: "Calma" },
-    { emoji: "😠", value: "Enojo" },
-  ];
-
   const handleEmojiClick = (emotion: string) => {
     setSelectedEmoji(emotion);
     setBounceEmoji(emotion);
