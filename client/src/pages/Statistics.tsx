@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
+import EmojiCalendar from "@/components/EmojiCalendar";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
