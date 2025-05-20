@@ -8,6 +8,7 @@
 @layer base {
   .text-shadow {
     text-shadow: -6px 6px 10px rgba(0, 0, 0, 0.4);
+    color: hsl(44, 87%, 94%);
   }
 }
 
@@ -36,7 +37,9 @@
 }
 
 body {
-  background: #DEE6EC;
+  /* background: #DEE6EC; */
+  /* background: #9acef5; */
+  background: #BFE6F0;
 }
 
 :root {
