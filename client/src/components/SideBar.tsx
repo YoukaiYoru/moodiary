@@ -167,7 +167,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="bg-white">
         <SidebarGroup>
           <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-orange-500 flex justify-center items-center h-20">
-            <a href="#">Moodiary</a>
+            Moodiary
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
