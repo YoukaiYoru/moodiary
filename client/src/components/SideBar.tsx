@@ -42,17 +42,10 @@ import {
 
 dayjs.extend(timezone);
 
-const mainItems = [
-  { title: "Home", url: "/dashboard", icon: Home },
-  { title: "Estadísticas", url: "/dashboard/stats", icon: BarChart2 },
-];
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
   const [notes, setNotes] = React.useState<string[]>([]);
-  const { state } = useSidebar(); // Sidebar inicialmente abierto
-  const isCollapsed = state === "collapsed";
 
   const context = React.use(NoteUpdateContext);
   if (!context)
