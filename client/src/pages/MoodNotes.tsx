@@ -61,15 +61,16 @@ export default function MoodNotes() {
         );
 
         // Mapear a tipo Note con hora formateada en zona local y hora12
-        const adaptedNotes: Note[] = sorted.map((item) => {
+        const adaptedNotes: Note[] = [];
+        for (let i = 0; i < sorted.length; i++) {
+          const item = sorted[i];
           const timeStr = dayjs(item.timestamp).tz(timezone).format("hh:mm A"); // Formato 12h con AM/PM
-
-          return {
+          adaptedNotes.push({
             hour: timeStr,
             emotion: item.emotion,
             text: item.text,
-          };
-        });
+          });
+        }
 
         setNotes(adaptedNotes);
       } catch (error) {
@@ -100,14 +101,21 @@ export default function MoodNotes() {
         {loading ? (
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         ) : notes.length > 0 ? (
-          notes.map((note) => (
-            <Notes
-              key={note.hour + note.text} // mejor que index si puede ser único
-              hour={note.hour}
-              emotion={note.emotion}
-              text={note.text}
-            />
-          ))
+          (() => {
+            const notesElements = [];
+            for (let i = 0; i < notes.length; i++) {
+              const note = notes[i];
+              notesElements.push(
+                <Notes
+                  key={note.hour + note.text}
+                  hour={note.hour}
+                  emotion={note.emotion}
+                  text={note.text}
+                />
+              );
+            }
+            return notesElements;
+          })()
         ) : (
           <p>No hay notas para esta fecha.</p>
         )}

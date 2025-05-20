@@ -34,7 +34,7 @@ export default function HomeLogin() {
   const { addDate } = context;
 
   const emojis = [
-    { emoji: "😄", value: "Alegría" },
+    { emoji: "😄", value: "Alegria" },
     { emoji: "😰", value: "Ansiedad" },
     { emoji: "😢", value: "Tristeza" },
     { emoji: "😌", value: "Calma" },
@@ -143,31 +143,97 @@ export default function HomeLogin() {
           </h1>
           <TooltipProvider>
             <div className="flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth">
-              {emojis.map(({ emoji, value }) => (
-                <Tooltip key={value}>
-                  <TooltipTrigger asChild>
-                    <button
-                      className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                        ${selectedEmoji === value ? "scale-150" : ""}
-                        ${bounceEmoji === value ? "animate-bounce" : ""}`}
-                      onClick={() => handleEmojiClick(value)}
-                      aria-label={value}
-                      type="button"
-                    >
-                      {emoji}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="capitalize">{value}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+              <Tooltip key="Alegria">
+                <TooltipTrigger asChild>
+                  <button
+                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
+                  ${selectedEmoji === "Alegria" ? "scale-150" : ""}
+                  ${bounceEmoji === "Alegria" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Alegria")}
+                    aria-label="Alegria"
+                    type="button"
+                  >
+                    😄
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">Alegría</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip key="Ansiedad">
+                <TooltipTrigger asChild>
+                  <button
+                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
+                  ${selectedEmoji === "Ansiedad" ? "scale-150" : ""}
+                  ${bounceEmoji === "Ansiedad" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Ansiedad")}
+                    aria-label="Ansiedad"
+                    type="button"
+                  >
+                    😰
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">Ansiedad</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip key="Tristeza">
+                <TooltipTrigger asChild>
+                  <button
+                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
+                  ${selectedEmoji === "Tristeza" ? "scale-150" : ""}
+                  ${bounceEmoji === "Tristeza" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Tristeza")}
+                    aria-label="Tristeza"
+                    type="button"
+                  >
+                    😢
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">Tristeza</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip key="Calma">
+                <TooltipTrigger asChild>
+                  <button
+                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
+                  ${selectedEmoji === "Calma" ? "scale-150" : ""}
+                  ${bounceEmoji === "Calma" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Calma")}
+                    aria-label="Calma"
+                    type="button"
+                  >
+                    😌
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">Calma</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip key="Enojo">
+                <TooltipTrigger asChild>
+                  <button
+                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
+                  ${selectedEmoji === "Enojo" ? "scale-150" : ""}
+                  ${bounceEmoji === "Enojo" ? "animate-bounce" : ""}`}
+                    onClick={() => handleEmojiClick("Enojo")}
+                    aria-label="Enojo"
+                    type="button"
+                  >
+                    😠
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">Enojo</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </TooltipProvider>
           <div className="relative w-full sm:w-[60w] mt-6">
             <Textarea
               className="min-h-[50px] w-full pr-14 rounded-2xl border-none text-base sm:text-lg md:text-xl placeholder:text-base md:placeholder:text-xl shadow-lg
-                        resize-none overflow-hidden bg-[#F2F4F4]/80 backdrop-blur-2xl"
+                        resize-none overflow-hidden bg-white dark:bg-[#1F1F1F] dark:text-white"
               placeholder="Escribe cómo te sientes hoy... Ej: Me siento agradecido y con energía"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -204,7 +270,7 @@ export default function HomeLogin() {
 
           <Button
             variant="outline"
-            className="mt-4 shadow-amber-100 cursor-pointer border-[#8b6f31] text-[rgb(78,73,29)] hover:bg-[#8b6f31]/10 hover:shadow hover:scale-105 transition-transform"
+            className="mt-4 shadow-amber-100 cursor-pointer border-blue-400 text-blue-950 hover:text-blue-950 hover:bg-[#8b6f31]/10 hover:shadow hover:scale-105 transition-transform"
             onClick={handleConfetti}
             type="button"
           >

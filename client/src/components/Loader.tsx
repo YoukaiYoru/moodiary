@@ -27,7 +27,11 @@ export default function Loader({ isLoaded }: { isLoaded: boolean }) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
         <div className="flex flex-col items-center gap-4 w-64">
-          <Progress value={progress} />
+          <Progress value={progress}
+            className="w-full h-4 bg-gray-200 dark:bg-gray-700overflow-hidden relative rounded-md
+              [&>div]:bg-[#292933] [&>div]:transition-colors 
+              dark:[&>div]:bg-white"
+          />
         </div>
       </div>
     );

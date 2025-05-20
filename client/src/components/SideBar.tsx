@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
@@ -50,6 +51,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
   const [notes, setNotes] = React.useState<string[]>([]);
+  const { state } = useSidebar(); // Sidebar inicialmente abierto
+  const isCollapsed = state === "collapsed";
+
   const context = React.use(NoteUpdateContext);
   if (!context)
     throw new Error("AppSidebar must be used within NoteDatesProvider");
@@ -65,13 +69,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const newDates = Array.from(
-        new Set(
-          response.data.map((item: { created_at: string }) =>
-            dayjs(item.created_at).tz().format("YYYY-MM-DD")
-          )
-        )
-      );
+      const dateSet = new Set<string>();
+      response.data.forEach((item: { created_at: string }) => {
+        const formattedDate = dayjs(item.created_at).tz().format("YYYY-MM-DD");
+        dateSet.add(formattedDate);
+      });
+      const newDates = Array.from(dateSet);
+
 
       const sortedPrev = Array.from(knownDates).sort();
       const sortedNew = [...newDates].sort();
@@ -103,18 +107,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const groupedNotes = response.data.reduce(
-          (
-            acc: Record<string, string[]>,
-            note: { created_at: string; content: string }
-          ) => {
-            const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
-            if (!acc[noteDate]) acc[noteDate] = [];
-            acc[noteDate].push(note.content);
-            return acc;
-          },
-          {}
-        );
+        // Eliminar .reduce
+        const groupedNotes: Record<string, string[]> = {};
+        response.data.forEach((note: { created_at: string; content: string }) => {
+          const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
+          if (!groupedNotes[noteDate]) {
+            groupedNotes[noteDate] = [];
+          }
+          groupedNotes[noteDate].push(note.content);
+        });
 
         const groupedDates = Object.keys(groupedNotes).sort().reverse();
         setNotes(groupedDates);
@@ -132,56 +133,70 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     : notes;
 
   // Renderizar enlaces filtrados (solo uno)
-  const renderNotes = () =>
-    filteredNotes.map((note) => (
-      <SidebarMenuSubItem key={note}>
-        <SidebarMenuButton asChild>
-          <NavLink
-            to={`/dashboard/notes/${note}`}
-            className={({ isActive }) =>
-              isActive ? "text-primary font-semibold" : "text-muted-foreground"
-            }
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            {note}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuSubItem>
-    ));
+  const renderNotes = () => {
+    const items = [];
+    for (const note of filteredNotes) {
+      items.push(
+        <SidebarMenuSubItem key={note}>
+          <SidebarMenuButton asChild>
+            <NavLink
+              to={`/dashboard/notes/${note}`}
+              className={({ isActive }) =>
+                isActive ? "text-primary font-semibold" : "text-muted-foreground"
+              }
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              {note}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuSubItem>
+      );
+    }
+    return items;
+  };
+
 
   return (
     <Sidebar
       collapsible="offcanvas"
-      className="bg-[#fdf6e3] text-[#3a2f2f] font-delius"
+      side="left"
+      variant="floating"
+      className={"text-[#3a2f2f] font-delius transition-all duration-300 ease-in-out"}
       {...props}
     >
-      <SidebarContent className="">
+      <SidebarContent className="bg-white">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-[#94461C] flex justify-center items-center h-20">
+          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-orange-500 flex justify-center items-center h-20">
             Moodiary
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map(({ title, url, icon: Icon }) => (
-                <SidebarMenuItem key={title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={url}
-                      className={({ isActive }) =>
-                        cn(
-                          isActive
-                            ? "text-primary font-semibold"
-                            : "text-muted-foreground"
-                        )
-                      }
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {title}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-
+              <SidebarMenuItem key="Home">
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")
+                    }
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Home
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem key="Estadísticas">
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/dashboard/stats"
+                    className={({ isActive }) =>
+                      cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")
+                    }
+                  >
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    Estadísticas
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <Collapsible defaultOpen className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -191,7 +206,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <Popover>
@@ -218,7 +232,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                           />
                         </PopoverContent>
                       </Popover>
-
                       {date && (
                         <Button
                           variant="ghost"
@@ -229,7 +242,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                           Limpiar búsqueda
                         </Button>
                       )}
-
                       {/* Solo un listado y filtrado */}
                       {renderNotes()}
                     </SidebarMenuSub>
@@ -240,10 +252,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       {/* Footer with UserButton */}
-      <SidebarFooter className="m-2 p-1 border-t transition duration-200 hover:bg-[#DEE6EC]/80 w-">
-        <UserButton showName />
+      <SidebarFooter
+        className={"m-2 p-1  transition duration-200 flex items-center font-delius"}
+      >
+        <UserButton showName
+        />
       </SidebarFooter>
     </Sidebar>
   );
