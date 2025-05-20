@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import axios from "axios";
 import ChartEmotion from "@/components/ChartEmotion";
-import EmojiCalendar from "../components/EmojiCalendar";
 import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
