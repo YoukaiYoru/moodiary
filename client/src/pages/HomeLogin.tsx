@@ -1,9 +1,11 @@
+import React, { useState } from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type React from "react";
-import { useState } from "react";
 import { TiLocationArrowOutline } from "react-icons/ti";
 import confetti from "canvas-confetti";
 import {
@@ -14,6 +16,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function HomeLogin() {
   const { getToken } = useAuth();
@@ -21,6 +27,11 @@ export default function HomeLogin() {
   const [text, setText] = useState("");
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const context = React.use(NoteUpdateContext);
+  if (!context)
+    throw new Error("HomeLogin must be used within NoteDatesProvider");
+  const { addDate } = context;
 
   const emojis = [
     { emoji: "😄", value: "Alegría" },
@@ -41,7 +52,7 @@ export default function HomeLogin() {
   // Contador de caracteres
   const max_length = 500;
   const total_chars = text.length;
-  const words = text.trim() === "" ? 0 : text.split(/\s+/).length;
+  const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
   const remaining = max_length - total_chars;
 
   const wordCounter = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -57,7 +68,7 @@ export default function HomeLogin() {
       if (!token)
         throw new Error("No se pudo obtener el token de autenticación.");
 
-      await api.post(
+      const res = await api.post(
         "/moods",
         {
           mood: selectedEmoji,
@@ -70,6 +81,13 @@ export default function HomeLogin() {
           },
         }
       );
+
+      // Extraer y formatear fecha local correctamente
+      const createdAt = res.data.created_at || new Date().toISOString();
+      const localDate = dayjs(createdAt).tz().format("YYYY-MM-DD");
+
+      // Disparar actualización en sidebar
+      addDate(localDate);
 
       setText("");
       setSelectedEmoji(null);
@@ -115,21 +133,26 @@ export default function HomeLogin() {
 
   return (
     <>
-      <h1 className="text-2xl font-light text-center lg:text-left mt-4">Bienvenido al Dashboard</h1>
-      <div className='flex justify-center items-center min-h-[80vh] px-4'>
+      <h1 className="text-2xl font-light text-center lg:text-left mt-4">
+        Bienvenido al Dashboard
+      </h1>
+      <div className="flex justify-center items-center min-h-[80vh] px-4">
         <section className="w-full max-w-3xl flex flex-col justify-center items-center">
-          <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center pt-4 pb-6" >¿Cómo te sientes hoy? 🫣</h1>
+          <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center pt-4 pb-6">
+            ¿Cómo te sientes hoy? 🫣
+          </h1>
           <TooltipProvider>
-            <div className='flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth'>
-
+            <div className="flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth">
               {emojis.map(({ emoji, value }) => (
                 <Tooltip key={value}>
                   <TooltipTrigger asChild>
                     <button
                       className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                        ${selectedEmoji === value ? 'scale-150' : ''}
-                        ${bounceEmoji === value ? 'animate-bounce' : ''}`}
+                        ${selectedEmoji === value ? "scale-150" : ""}
+                        ${bounceEmoji === value ? "animate-bounce" : ""}`}
                       onClick={() => handleEmojiClick(value)}
+                      aria-label={value}
+                      type="button"
                     >
                       {emoji}
                     </button>
@@ -160,28 +183,30 @@ export default function HomeLogin() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className='absolute top-[50%] right-2 sm:right-4 md:right-4 xl:right-4 bg-[#455763] hover:bg-[#455763]/90 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer'
+                    className="absolute top-[50%] right-2 sm:right-4 md:right-4 xl:right-4 bg-[#455763] hover:bg-[#455763]/90 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer"
                     onClick={handleSubmit}
+                    type="button"
                   >
                     <TiLocationArrowOutline />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  Enviar
-                </TooltipContent>
+                <TooltipContent>Enviar</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
           {/* Contadores */}
-          <div className='flex justify-end items-center w-full mt-4 text-sm font-dosis px-2'>
+          <div className="flex justify-end items-center w-full mt-4 text-sm font-dosis px-2">
             <p>Palabras: {words}&nbsp;</p>
-            <p>&nbsp;Caracteres: {total_chars}/{remaining}</p>
+            <p>
+              &nbsp;Caracteres: {total_chars}/{remaining}
+            </p>
           </div>
 
           <Button
             variant="outline"
             className="mt-4 shadow-amber-100 cursor-pointer border-[#8b6f31] text-[rgb(78,73,29)] hover:bg-[#8b6f31]/10 hover:shadow hover:scale-105 transition-transform"
             onClick={handleConfetti}
+            type="button"
           >
             ¡Fue un buen día!
           </Button>

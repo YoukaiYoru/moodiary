@@ -3,6 +3,12 @@ import { useParams } from "react-router-dom";
 import Notes from "@/components/Notes";
 import api from "@/lib/axios";
 import { useAuth } from "@clerk/clerk-react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 type Note = {
   hour: string;
@@ -24,13 +30,16 @@ export default function MoodNotes() {
       setLoading(true);
       try {
         const token = await getToken();
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Ej: "America/Lima"
+
+        // Crear dayjs para la fecha seleccionada a medianoche local
+        const dateObj = dayjs.tz(`${dateParam}T00:00:00`, dayjs.tz.guess());
+
+        // Offset en minutos para esa fecha (signo invertido para backend)
+        const offsetMinutes = -dateObj.utcOffset();
 
         const response = await api.get(`/moods/entries/${dateParam}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: { timezone }, // Enviar zona horaria al backend
+          headers: { Authorization: `Bearer ${token}` },
+          params: { offset: offsetMinutes },
         });
 
         type ApiNote = {
@@ -39,32 +48,24 @@ export default function MoodNotes() {
           text: string;
         };
 
-        const notes = response.data as ApiNote[];
+        const apiNotes = response.data as ApiNote[];
 
-        // Ordenar primero por hora (más reciente primero) en la zona horaria del usuario
-        const sorted = notes.sort((a, b) => {
-          const aDate = new Date(a.timestamp).toLocaleString("en-US", {
-            timeZone: timezone,
-          });
-          const bDate = new Date(b.timestamp).toLocaleString("en-US", {
-            timeZone: timezone,
-          });
-          return new Date(bDate).getTime() - new Date(aDate).getTime();
-        });
+        // Obtener zona horaria local
+        const timezone = dayjs.tz.guess();
 
-        // Adaptar los datos
+        // Ordenar notas por timestamp (más reciente primero), usando dayjs y zona local
+        const sorted = apiNotes.sort(
+          (a, b) =>
+            dayjs(b.timestamp).tz(timezone).valueOf() -
+            dayjs(a.timestamp).tz(timezone).valueOf()
+        );
+
+        // Mapear a tipo Note con hora formateada en zona local y hora12
         const adaptedNotes: Note[] = sorted.map((item) => {
-          const date = new Date(item.timestamp);
-
-          const timeStr = date.toLocaleTimeString(navigator.language, {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: timezone,
-          });
+          const timeStr = dayjs(item.timestamp).tz(timezone).format("hh:mm A"); // Formato 12h con AM/PM
 
           return {
-            hour: timeStr, // Solo hora, ej: "23:54"
+            hour: timeStr,
             emotion: item.emotion,
             text: item.text,
           };
@@ -99,9 +100,9 @@ export default function MoodNotes() {
         {loading ? (
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         ) : notes.length > 0 ? (
-          notes.map((note, index) => (
+          notes.map((note) => (
             <Notes
-              key={index}
+              key={note.hour + note.text} // mejor que index si puede ser único
               hour={note.hour}
               emotion={note.emotion}
               text={note.text}

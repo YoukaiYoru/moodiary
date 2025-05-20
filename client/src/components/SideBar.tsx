@@ -1,17 +1,9 @@
 import React from "react";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
-import {
-  Home,
-  BarChart2,
-  Notebook,
-  ChevronDown,
-  FileText,
-  Search,
-} from "lucide-react";
-import { NavLink } from "react-router-dom";
-import { format } from "date-fns";
 import { useAuth } from "@clerk/clerk-react";
-
+import { NavLink } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -35,98 +27,123 @@ import { Button } from "@ui/button";
 import { Calendar } from "@ui/calendar";
 import { UserButton } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
+import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
+
+// Import icons
+import {
+  Home,
+  BarChart2,
+  FileText,
+  Notebook,
+  ChevronDown,
+  Search,
+} from "lucide-react";
+
+dayjs.extend(timezone);
 
 const mainItems = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Estadísticas", url: "/dashboard/stats", icon: BarChart2 },
 ];
 
-interface NoteGroup {
-  date: string;
-}
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
-  const [noteItems, setNoteItems] = React.useState<NoteGroup[]>([]);
-  const [isNotesOpen, setIsNotesOpen] = React.useState(true);
+  const [notes, setNotes] = React.useState<string[]>([]);
+  const context = React.use(NoteUpdateContext);
+  if (!context)
+    throw new Error("AppSidebar must be used within NoteDatesProvider");
+  const { knownDates, triggerNoteUpdate } = context;
+  const hasFetchedRef = React.useRef(false);
 
-  const fetchNotes = React.useCallback(async () => {
+  const fetchDates = React.useCallback(async () => {
     try {
       const token = await getToken();
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await api.get("/moods/dates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Detectar la zona horaria del cliente automáticamente
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      interface MoodItem {
-        created_at: string;
-      }
-
-      interface GroupedNotes {
-        [date: string]: MoodItem[];
-      }
-
-      const grouped: GroupedNotes = (response.data as MoodItem[]).reduce(
-        (acc: GroupedNotes, item: MoodItem) => {
-          const localDate = new Date(item.created_at).toLocaleDateString(
-            "en-CA",
-            {
-              timeZone: userTimeZone,
-            }
-          ); // ej: "2025-05-17"
-
-          if (!acc[localDate]) acc[localDate] = [];
-          acc[localDate].push(item);
-
-          return acc;
-        },
-        {}
+      const newDates = Array.from(
+        new Set(
+          response.data.map((item: { created_at: string }) =>
+            dayjs(item.created_at).tz().format("YYYY-MM-DD")
+          )
+        )
       );
 
-      const localDates = Object.keys(grouped);
-
-      setNoteItems(localDates.map((date) => ({ date }))); // O `grouped` si necesitas los items
+      const sortedPrev = Array.from(knownDates).sort();
+      const sortedNew = [...newDates].sort();
+      const isEqual =
+        sortedPrev.length === sortedNew.length &&
+        sortedPrev.every((v, i) => v === sortedNew[i]);
+      if (!isEqual) {
+        newDates.forEach((d) => triggerNoteUpdate(d as string));
+      }
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
-  }, [getToken]);
+  }, [getToken, knownDates, triggerNoteUpdate]);
 
   React.useEffect(() => {
-    if (!isNotesOpen) {
-      fetchNotes();
+    if (!hasFetchedRef.current) {
+      fetchDates();
+      hasFetchedRef.current = true;
     }
-  }, [isNotesOpen, fetchNotes]);
+  }, [fetchDates]);
 
+  React.useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await api.get("/moods/dates", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const groupedNotes = response.data.reduce(
+          (
+            acc: Record<string, string[]>,
+            note: { created_at: string; content: string }
+          ) => {
+            const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
+            if (!acc[noteDate]) acc[noteDate] = [];
+            acc[noteDate].push(note.content);
+            return acc;
+          },
+          {}
+        );
+
+        const groupedDates = Object.keys(groupedNotes).sort().reverse();
+        setNotes(groupedDates);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      }
+    };
+
+    fetchNotes();
+  }, [getToken]);
+
+  // Filtrar notas si hay fecha seleccionada
   const filteredNotes = date
-    ? noteItems.filter((group) => group.date === format(date, "yyyy-MM-dd"))
-    : noteItems;
+    ? notes.filter((d) => d === dayjs(date).format("YYYY-MM-DD"))
+    : notes;
 
-  const renderNoteLinks = () =>
-    filteredNotes.map((group) => (
-      <SidebarMenuSubItem key={group.date}>
+  // Renderizar enlaces filtrados (solo uno)
+  const renderNotes = () =>
+    filteredNotes.map((note) => (
+      <SidebarMenuSubItem key={note}>
         <SidebarMenuButton asChild>
           <NavLink
-            to={`/dashboard/notes/${group.date}`}
+            to={`/dashboard/notes/${note}`}
             className={({ isActive }) =>
-              cn(
-                isActive
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground"
-              )
+              isActive ? "text-primary font-semibold" : "text-muted-foreground"
             }
           >
             <FileText className="mr-2 h-4 w-4" />
-            {group.date}
+            {note}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuSubItem>
@@ -167,14 +184,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuItem>
               ))}
 
-              <Collapsible
-                defaultOpen
-                onOpenChange={(open) => setIsNotesOpen(open)}
-                className="group/collapsible"
-              >
+              <Collapsible defaultOpen className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="hover:cursor-pointer">
                       <Notebook className="mr-2 h-4 w-4" />
                       Notes
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
@@ -193,7 +206,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                             )}
                           >
                             <Search className="mr-2 h-4 w-4" />
-                            {date ? format(date, "PPP") : "Buscar por fecha"}
+                            {date
+                              ? dayjs(date).format("LL")
+                              : "Buscar por fecha"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -217,7 +232,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         </Button>
                       )}
 
-                      {renderNoteLinks()}
+                      {/* Solo un listado y filtrado */}
+                      {renderNotes()}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
