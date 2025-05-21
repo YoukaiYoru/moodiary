@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/axios";
-import axios from "axios";
 import ChartEmotion from "@/components/ChartEmotion";
 import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
@@ -8,15 +7,25 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmojiCalendar from "@/components/EmojiCalendar";
+import Emoji from "react-emojis";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+// Map unicode emoji char to react-emoji name
+const charToEmojiName: { char: string; name: string }[] = [
+  { char: "😄", name: "grinning-face-with-smiling-eyes" },
+  { char: "😌", name: "relieved-face" },
+  { char: "😢", name: "crying-face" },
+  { char: "😰", name: "anxious-face-with-sweat" },
+  { char: "😠", name: "angry-face" },
+];
 
 export default function Statistics() {
   // Estados para loaders
   const [loadingPhrase, setLoadingPhrase] = useState(true);
   const [loadingAverageMood, setLoadingAverageMood] = useState(true);
-  const [loadingChart, setLoadingChart] = useState(true);
+  const [loadingCalendar, setLoadingCalendar] = useState(true);
 
   const { getToken } = useAuth();
   const [phrase, setPhrase] = useState("No hay frase motivacional disponible");
@@ -33,133 +42,75 @@ export default function Statistics() {
     name?: string;
   } | null>(null);
 
-  //simulación de carga
+  // Fetch motivational quote, average mood, and calendar data together
   useEffect(() => {
-    const phraseTimer = setTimeout(() => setLoadingPhrase(false), 1500);
-    const averageMoodTimer = setTimeout(
-      () => setLoadingAverageMood(false),
-      1500
-    );
-    const chartTimer = setTimeout(() => setLoadingChart(false), 1500);
-
-    return () => {
-      clearTimeout(phraseTimer);
-      clearTimeout(averageMoodTimer);
-      clearTimeout(chartTimer);
-    };
-  }, []);
-
-  // Obtener la frase motivacional
-
-  useEffect(() => {
-    async function fetchMotivationalQuote() {
+    let isActive = true;
+    async function loadStats() {
+      setLoadingPhrase(true);
+      setLoadingAverageMood(true);
+      setLoadingCalendar(true);
       try {
         const token = await getToken();
-        const response = await api.get("/motivationalQuotes/today", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        if (!token) throw new Error("Authentication failed");
+        const tz = dayjs.tz.guess();
+        const today = dayjs().tz(tz).format("YYYY-MM-DD");
+        const now = dayjs().tz(tz);
+        const [quoteRes, avgRes, calRes] = await Promise.all([
+          api.get("/motivationalQuotes/today", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          api.get("/moods/average/today", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { date: today, timezone: tz },
+          }),
+          api.get("/moods/average/by-date", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { timezone: tz, year: now.year(), month: now.month() + 1 },
+          }),
+        ]);
+        if (!isActive) return;
         setPhrase(
-          response.data.message || "No hay frase motivacional disponible"
+          quoteRes.data.message ?? "No hay frase motivacional disponible"
         );
-      } catch (error) {
-        console.error("Error fetching motivational quote:", error);
+        setAverageMood(avgRes.data);
+        setCalendar(
+          Array.isArray(calRes.data)
+            ? calRes.data.map((i: { date: string; emoji: string }) => ({
+                date: i.date,
+                emoji: i.emoji,
+              }))
+            : []
+        );
+      } catch (err) {
+        console.error("Error loading statistics:", err);
+      } finally {
+        if (isActive) {
+          setLoadingPhrase(false);
+          setLoadingAverageMood(false);
+          setLoadingCalendar(false);
+        }
       }
     }
-    fetchMotivationalQuote();
-  }, [getToken]);
-
-  // Obtener el estado promedio
-  useEffect(() => {
-    const fetchAverageMood = async () => {
-      try {
-        const token = await getToken();
-        if (!token) throw new Error("No token disponible");
-
-        const localDateStr = dayjs().tz().format("YYYY-MM-DD");
-
-        const response = await api.get(`/moods/average/today`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            date: localDateStr,
-            timezone: dayjs.tz.guess(), // Detecta la zona horaria
-          },
-        });
-
-        setAverageMood(response.data || []);
-      } catch (error: unknown) {
-        let message = "Error desconocido";
-        if (axios.isAxiosError(error)) {
-          message = error.response?.data?.error || error.message;
-        } else if (error instanceof Error) {
-          message = error.message;
-        }
-        console.error("Error fetching average mood:", message);
-      }
+    loadStats();
+    return () => {
+      isActive = false;
     };
-
-    fetchAverageMood();
   }, [getToken]);
 
-  //Obtener emoji por fecha
-  //GET /moods/average/by-date?timezone=America/Lima
-  useEffect(() => {
-    const fetchEmojiByDate = async () => {
-      try {
-        const token = await getToken();
-        if (!token) throw new Error("No token disponible");
+  // Memoize calendar mapping for EmojiCalendar
+  const calendarMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    calendar?.forEach(({ date, emoji }) => {
+      map[date] = emoji;
+    });
+    return map;
+  }, [calendar]);
 
-        const timezone = dayjs.tz.guess(); // Detecta la zona horaria
-        const now = dayjs().tz(timezone); // Fecha local
-
-        const response = await api.get(`/moods/average/by-date`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            timezone,
-            year: now.year(),
-            month: now.month() + 1, // month es 0-indexado → +1
-          },
-        });
-
-        const rawData = response.data;
-
-        if (!Array.isArray(rawData)) {
-          throw new Error("Respuesta inválida: se esperaba un arreglo");
-        }
-
-        // Usamos forEach en vez de map
-        interface EmojiData {
-          date: string;
-          emoji: string;
-        }
-
-        const formattedData: EmojiData[] = [];
-        rawData.forEach((item) => {
-          formattedData.push({
-            date: item.date,
-            emoji: item.emoji,
-          });
-        });
-
-        setCalendar(formattedData || []);
-      } catch (error) {
-        let message = "Error desconocido";
-        if (axios.isAxiosError(error)) {
-          message = error.response?.data?.error || error.message;
-        } else if (error instanceof Error) {
-          message = error.message;
-        }
-        console.error("Error fetching emoji by date:", message);
-      }
-    };
-
-    fetchEmojiByDate();
-  }, [getToken]);
+  // Map averageMood.emoji (unicode) to react-emoji name
+  const mappedEmojiName = averageMood?.emoji
+    ? (charToEmojiName.find((m) => m.char === averageMood.emoji)?.name ??
+      "neutral-face")
+    : "neutral-face";
 
   return (
     <div className="space-y-6 pb-10">
@@ -194,9 +145,9 @@ export default function Statistics() {
           ) : (
             <>
               <div className="flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-red-50 dark:bg-[#2c2c2c] mb-3 shadow-inner">
-                <span className="text-5xl sm:text-6xl select-none">
-                  {averageMood?.emoji || "😐"}
-                </span>
+                <div className="text-5xl sm:text-6xl select-none">
+                  <Emoji emoji={mappedEmojiName} />
+                </div>
               </div>
               <p className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 text-center capitalize">
                 {averageMood?.name || "Sin datos"}
@@ -216,30 +167,20 @@ export default function Statistics() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Gráfico */}
         <div className="xl:col-span-3 w-full  mx-auto xl:mx-0 bg-white dark:bg-[#1F1F1F] rounded-2xl p-4 shadow-sm">
-          {loadingChart ? (
-            <Skeleton className="h-[300px] sm:h-[320px] w-full rounded-xl" />
-          ) : (
-            <ChartEmotion
-              title="Emociones vs Tiempo"
-              description="Mira lo hermoso que es tu evolución emocional"
-            />
-          )}
+          <ChartEmotion
+            title="Emociones vs Tiempo"
+            description="Mira lo hermoso que es tu evolución emocional"
+          />
         </div>
 
         {/* Calendario */}
         <div className="xl:col-span-1 w-full flex justify-center mx-auto xl:mx-0 bg-white dark:bg-[#1F1F1F] rounded-2xl shadow-sm p-5">
           <div className="max-w-xs w-full">
-            <EmojiCalendar
-              dataDate={(() => {
-                const obj: Record<string, string> = {};
-                if (calendar) {
-                  calendar.forEach(({ date, emoji }) => {
-                    obj[date] = emoji;
-                  });
-                }
-                return obj;
-              })()}
-            />
+            {loadingCalendar ? (
+              <Skeleton className="h-[300px] sm:h-[320px] w-full rounded-xl" />
+            ) : (
+              <EmojiCalendar dataDate={calendarMap} />
+            )}
           </div>
         </div>
       </div>

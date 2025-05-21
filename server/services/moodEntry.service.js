@@ -221,13 +221,15 @@ class MoodEntryService {
     return results; // [{ date: '2025-05-16' }, ...]
   }
 
-  async findByDateFormatted(userId, isoDate, offsetMinutes = 0) {
-    // Fecha local interpretada con offset manual (sin zona)
-    const localMidnight = dayjs(`${isoDate}T00:00:00`).utcOffset(offsetMinutes);
+  async findByDateFormatted(userId, isoDate, timeZone = 'UTC') {
+    // Ejemplo: isoDate = '2025-05-20', timeZone = 'America/Lima'
 
-    // Construir UTC start y end correctos
+    // Interpretar la fecha como medianoche en la zona del usuario
+    const localMidnight = dayjs.tz(`${isoDate}T00:00:00`, timeZone);
+
+    // Calcular el inicio y fin del día en UTC
     const utcStart = localMidnight.utc().toDate();
-    const utcEnd = localMidnight.add(1, 'day').utc().toDate(); // ← FIX
+    const utcEnd = localMidnight.add(1, 'day').utc().toDate();
 
     const entries = await models.MoodEntry.findAll({
       where: {

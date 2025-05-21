@@ -149,14 +149,20 @@ router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const { isoDate } = req.params;
-    // offset en minutos (por ejemplo, -300 para UTC-5)
-    const offsetMinutes = parseInt(req.query.offset, 10) || 0;
+    const timeZone = req.query.timeZone;
+
+    if (!timeZone) {
+      return res
+        .status(400)
+        .json({ error: 'Missing timeZone parameter (e.g., America/Lima)' });
+    }
 
     const entries = await service.findByDateFormatted(
       userId,
       isoDate,
-      offsetMinutes,
+      timeZone,
     );
+
     res.json(entries);
   } catch (error) {
     next(error);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
+import Emoji from "react-emojis";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -28,14 +29,22 @@ export default function HomeLogin() {
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const context = React.use(NoteUpdateContext);
+  const context = useContext(NoteUpdateContext);
   if (!context)
     throw new Error("HomeLogin must be used within NoteDatesProvider");
   const { addDate } = context;
 
-  const handleEmojiClick = (emotion: string) => {
-    setSelectedEmoji(emotion);
-    setBounceEmoji(emotion);
+  const emotions = [
+    { key: "Alegría", emoji: "grinning-face-with-smiling-eyes" },
+    { key: "Ansiedad", emoji: "anxious-face-with-sweat" },
+    { key: "Tristeza", emoji: "crying-face" },
+    { key: "Calma", emoji: "relieved-face" },
+    { key: "Enojo", emoji: "angry-face" },
+  ];
+
+  const handleEmojiClick = (id: string) => {
+    setSelectedEmoji(id);
+    setBounceEmoji(id);
     const audio = new Audio(`/sounds/emoji.mp3`);
     audio.play();
     setTimeout(() => setBounceEmoji(null), 2500);
@@ -52,7 +61,15 @@ export default function HomeLogin() {
   };
 
   const handleSubmit = async () => {
-    if (!text.trim() || !selectedEmoji || submitting) return;
+    if (submitting) return;
+    if (!selectedEmoji) {
+      toast.error("Selecciona una emoción");
+      return;
+    }
+    if (!text.trim()) {
+      toast.error("Escribe una nota antes de enviar");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -128,104 +145,39 @@ export default function HomeLogin() {
       <h1 className="text-2xl font-light text-center lg:text-left mt-4">
         Bienvenido al Dashboard
       </h1>
+
       <div className="flex justify-center items-center min-h-[80vh] px-4">
         <section className="w-full max-w-3xl flex flex-col justify-center items-center">
-          <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center pt-4 pb-6">
-            ¿Cómo te sientes hoy? 🫣
-          </h1>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4 pb-6">
+            <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center">
+              ¿Cómo te sientes hoy?
+            </h1>
+            <Emoji emoji="hugging-face" size={50} />
+          </div>
           <TooltipProvider>
-            <div className="flex lg:justify-center items-center gap-4 overflow-x-auto flex-nowrap w-full max-w-full px-2 sm:px-0 py-2 scroll-smooth">
-              <Tooltip key="Alegría">
-                <TooltipTrigger asChild>
-                  <button
-                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Alegría" ? "scale-150" : ""}
-                  ${bounceEmoji === "Alegría" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Alegría")}
-                    aria-label="Alegría"
-                    type="button"
-                  >
-                    😄
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="capitalize">Alegría</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip key="Ansiedad">
-                <TooltipTrigger asChild>
-                  <button
-                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Ansiedad" ? "scale-150" : ""}
-                  ${bounceEmoji === "Ansiedad" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Ansiedad")}
-                    aria-label="Ansiedad"
-                    type="button"
-                  >
-                    😰
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="capitalize">Ansiedad</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip key="Tristeza">
-                <TooltipTrigger asChild>
-                  <button
-                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Tristeza" ? "scale-150" : ""}
-                  ${bounceEmoji === "Tristeza" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Tristeza")}
-                    aria-label="Tristeza"
-                    type="button"
-                  >
-                    😢
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="capitalize">Tristeza</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip key="Calma">
-                <TooltipTrigger asChild>
-                  <button
-                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Calma" ? "scale-150" : ""}
-                  ${bounceEmoji === "Calma" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Calma")}
-                    aria-label="Calma"
-                    type="button"
-                  >
-                    😌
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="capitalize">Calma</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip key="Enojo">
-                <TooltipTrigger asChild>
-                  <button
-                    className={`emoji-button text-2xl sm:text-4xl transition duration-200 transform
-                  ${selectedEmoji === "Enojo" ? "scale-150" : ""}
-                  ${bounceEmoji === "Enojo" ? "animate-bounce" : ""}`}
-                    onClick={() => handleEmojiClick("Enojo")}
-                    aria-label="Enojo"
-                    type="button"
-                  >
-                    😠
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="capitalize">Enojo</p>
-                </TooltipContent>
-              </Tooltip>
+            <div className="flex lg:justify-center items-center gap-4 overflow-x-auto w-full px-2 sm:px-0 py-2 scroll-smooth">
+              {emotions.map(({ key, emoji }) => (
+                <Tooltip key={key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={`emoji-button transition-transform duration-200 ${selectedEmoji === emoji ? "scale-150" : ""} ${bounceEmoji === emoji ? "animate-bounce" : ""}`}
+                      onClick={() => handleEmojiClick(key)}
+                      aria-label={key}
+                      type="button"
+                    >
+                      <Emoji emoji={emoji} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="capitalize">{key}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
             </div>
           </TooltipProvider>
-          <div className="relative w-full sm:w-[60w] mt-6">
+          <div className="relative w-full sm:w-[60vw] mt-6">
             <Textarea
-              className="min-h-[50px] w-full pr-14 rounded-2xl border-none text-base sm:text-lg md:text-xl placeholder:text-base md:placeholder:text-xl shadow-lg
-                        resize-none overflow-hidden bg-white dark:bg-[#1F1F1F] dark:text-white"
+              className="min-h-[50px] w-full pr-14 rounded-2xl border-none text-base sm:text-lg md:text-xl placeholder:text-base md:placeholder:text-xl shadow-lg resize-none overflow-hidden bg-white dark:bg-[#1F1F1F] dark:text-white"
               placeholder="Escribe cómo te sientes hoy... Ej: Me siento agradecido y con energía"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -241,7 +193,7 @@ export default function HomeLogin() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="absolute top-[50%] right-2 sm:right-4 md:right-4 xl:right-4 bg-[#455763] hover:bg-[#455763]/90 transform translate-y-[-50%] rounded-xl px-4 py-4 text-sm cursor-pointer"
+                    className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 bg-[#455763] hover:bg-[#455763]/90 rounded-xl px-4 py-4 text-sm"
                     onClick={handleSubmit}
                     type="button"
                   >

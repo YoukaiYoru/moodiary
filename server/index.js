@@ -25,7 +25,7 @@ app.use('/clerk/webhook', webHookRouter);
 
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5001;
 
 // CORS Configuration
 const whitelist = [
@@ -53,7 +53,11 @@ app.use(cors(corsOptions));
 routerApi(app);
 
 // Middlewares para manejo de errores
-app.use(clerkMiddleware());
+app.use(
+  clerkMiddleware({
+    authorizedParties: ['https://moodiary.live', 'https://www.moodiary.live'],
+  }),
+);
 app.use(logErrors);
 app.use(boomErrorHandler);
 app.use(sequelizeErrorHandler);

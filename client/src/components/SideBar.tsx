@@ -29,7 +29,6 @@ import { UserButton } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
 
-// Import icons
 import {
   Home,
   BarChart2,
@@ -46,12 +45,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const [date, setDate] = React.useState<Date>();
   const [notes, setNotes] = React.useState<string[]>([]);
 
-  const context = React.use(NoteUpdateContext);
+  const context = React.useContext(NoteUpdateContext);
   if (!context)
     throw new Error("AppSidebar must be used within NoteDatesProvider");
-  const { knownDates, triggerNoteUpdate } = context;
-  const hasFetchedRef = React.useRef(false);
+  const { knownDates, addDate } = context;
 
+  // Fetch para obtener fechas y agregarlas al contexto si hay diferencias
   const fetchDates = React.useCallback(async () => {
     try {
       const token = await getToken();
@@ -61,99 +60,98 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const dateSet = new Set<string>();
-      response.data.forEach((item: { created_at: string }) => {
-        const formattedDate = dayjs(item.created_at).tz().format("YYYY-MM-DD");
-        dateSet.add(formattedDate);
-      });
-      const newDates = Array.from(dateSet);
-
+      const newDates = Array.from(
+        new Set(
+          response.data.map((item: { created_at: string }) =>
+            dayjs(item.created_at).tz().format("YYYY-MM-DD")
+          )
+        )
+      );
 
       const sortedPrev = Array.from(knownDates).sort();
       const sortedNew = [...newDates].sort();
+
       const isEqual =
         sortedPrev.length === sortedNew.length &&
         sortedPrev.every((v, i) => v === sortedNew[i]);
+
       if (!isEqual) {
-        newDates.forEach((d) => triggerNoteUpdate(d as string));
+        (newDates as string[]).forEach(addDate);
       }
+    } catch (error) {
+      console.error("Error fetching dates:", error);
+    }
+  }, [getToken, knownDates, addDate]);
+
+  // Fetch notas agrupadas por fecha para renderizar en el sidebar
+  const fetchNotes = React.useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const response = await api.get("/moods/dates", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const groupedNotes: Record<string, string[]> = {};
+      response.data.forEach((note: { created_at: string; content: string }) => {
+        const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
+        if (!groupedNotes[noteDate]) {
+          groupedNotes[noteDate] = [];
+        }
+        groupedNotes[noteDate].push(note.content);
+      });
+
+      const groupedDates = Object.keys(groupedNotes).sort().reverse();
+      setNotes(groupedDates);
     } catch (error) {
       console.error("Error fetching notes:", error);
     }
-  }, [getToken, knownDates, triggerNoteUpdate]);
-
-  React.useEffect(() => {
-    if (!hasFetchedRef.current) {
-      fetchDates();
-      hasFetchedRef.current = true;
-    }
-  }, [fetchDates]);
-
-  React.useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-
-        const response = await api.get("/moods/dates", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        // Eliminar .reduce
-        const groupedNotes: Record<string, string[]> = {};
-        response.data.forEach((note: { created_at: string; content: string }) => {
-          const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
-          if (!groupedNotes[noteDate]) {
-            groupedNotes[noteDate] = [];
-          }
-          groupedNotes[noteDate].push(note.content);
-        });
-
-        const groupedDates = Object.keys(groupedNotes).sort().reverse();
-        setNotes(groupedDates);
-      } catch (error) {
-        console.error("Error fetching notes:", error);
-      }
-    };
-
-    fetchNotes();
   }, [getToken]);
 
-  // Filtrar notas si hay fecha seleccionada
+  // Initial fetch of dates on mount
+  React.useEffect(() => {
+    fetchDates();
+  }, [fetchDates]);
+
+  // Re-fetch notes whenever knownDates updates (e.g., after a POST)
+  React.useEffect(() => {
+    if (knownDates.size > 0) {
+      fetchNotes();
+    }
+  }, [knownDates, fetchNotes]);
+
   const filteredNotes = date
     ? notes.filter((d) => d === dayjs(date).format("YYYY-MM-DD"))
     : notes;
 
-  // Renderizar enlaces filtrados (solo uno)
-  const renderNotes = () => {
-    const items = [];
-    for (const note of filteredNotes) {
-      items.push(
-        <SidebarMenuSubItem key={note}>
-          <SidebarMenuButton asChild>
-            <NavLink
-              to={`/dashboard/notes/${note}`}
-              className={({ isActive }) =>
-                isActive ? "text-primary font-semibold" : "text-muted-foreground"
-              }
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              {note}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuSubItem>
-      );
-    }
-    return items;
-  };
-
+  const renderNotes = () =>
+    filteredNotes.map((note) => (
+      <SidebarMenuSubItem key={note}>
+        <SidebarMenuButton asChild>
+          <NavLink
+            to={`/dashboard/notes/${note}`}
+            className={({ isActive }) =>
+              cn(
+                isActive
+                  ? "text-primary font-semibold"
+                  : "text-muted-foreground"
+              )
+            }
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {note}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuSubItem>
+    ));
 
   return (
     <Sidebar
       collapsible="offcanvas"
       side="left"
       variant="floating"
-      className={"text-[#3a2f2f] font-delius transition-all duration-300 ease-in-out"}
+      className="text-[#3a2f2f] font-delius transition-all duration-300 ease-in-out"
       {...props}
     >
       <SidebarContent className="bg-white">
@@ -168,7 +166,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   <NavLink
                     to="/dashboard"
                     className={({ isActive }) =>
-                      cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")
+                      cn(
+                        isActive
+                          ? "text-primary font-semibold"
+                          : "text-muted-foreground"
+                      )
                     }
                   >
                     <Home className="mr-2 h-4 w-4" />
@@ -181,7 +183,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   <NavLink
                     to="/dashboard/stats"
                     className={({ isActive }) =>
-                      cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")
+                      cn(
+                        isActive
+                          ? "text-primary font-semibold"
+                          : "text-muted-foreground"
+                      )
                     }
                   >
                     <BarChart2 className="mr-2 h-4 w-4" />
@@ -234,7 +240,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                           Limpiar búsqueda
                         </Button>
                       )}
-                      {/* Solo un listado y filtrado */}
                       {renderNotes()}
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -244,12 +249,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {/* Footer with UserButton */}
-      <SidebarFooter
-        className={"m-2 p-1  transition duration-200 flex items-center font-delius"}
-      >
-        <UserButton showName
-        />
+      <SidebarFooter className="m-2 p-1 transition duration-200 flex items-center font-delius">
+        <UserButton showName />
       </SidebarFooter>
     </Sidebar>
   );

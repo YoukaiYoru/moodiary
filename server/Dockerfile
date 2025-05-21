@@ -1,14 +1,17 @@
-# server/Dockerfile
-FROM node:18
+# Usa una imagen base de Node
+FROM node:20
 
+# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install --silent
-
+# Copia solo los archivos del backend
 COPY . .
 
+# Instala dependencias
+RUN npm install
+
+# Expone el puerto que tu app usa (ajústalo si usas otro)
 EXPOSE 5001
 
-CMD ["npm", "run", "start"]
+# Comando para ejecutar la app
+CMD ["npm", "start"]
