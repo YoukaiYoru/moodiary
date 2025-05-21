@@ -30,7 +30,7 @@ export default function MoodNotes() {
         const token = await getToken();
         if (!token) throw new Error("Authentication failed");
         const timezone = dayjs.tz.guess();
-        const response = await api.get(`/entries/${dateParam}`, {
+        const response = await api.get(`moods/entries/${dateParam}`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { timeZone: timezone },
         });
