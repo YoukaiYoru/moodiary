@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Notes from "@/components/Notes";
 import api from "@/lib/axios";
@@ -10,78 +10,55 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-type Note = {
-  hour: string;
-  emotion: string;
-  text: string;
-};
+type Note = { hour: string; emotion: string; text: string };
 
 export default function MoodNotes() {
   const { id: dateParam } = useParams<{ id: string }>();
   const { getToken } = useAuth();
 
-  const [notes, setNotes] = React.useState<Note[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!dateParam) return;
-
+    let isActive = true;
     const fetchNotesByDate = async () => {
       setLoading(true);
+      setError(null);
       try {
         const token = await getToken();
-
-        // Crear dayjs para la fecha seleccionada a medianoche local
-        const dateObj = dayjs.tz(`${dateParam}T00:00:00`, dayjs.tz.guess());
-
-        // Offset en minutos para esa fecha (signo invertido para backend)
-        const offsetMinutes = -dateObj.utcOffset();
-
-        const response = await api.get(`/moods/entries/${dateParam}`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { offset: offsetMinutes },
-        });
-
-        type ApiNote = {
-          timestamp: string;
-          emotion: string;
-          text: string;
-        };
-
-        const apiNotes = response.data as ApiNote[];
-
-        // Obtener zona horaria local
+        if (!token) throw new Error("Authentication failed");
         const timezone = dayjs.tz.guess();
-
-        // Ordenar notas por timestamp (más reciente primero), usando dayjs y zona local
+        const response = await api.get(`/entries/${dateParam}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { timeZone: timezone },
+        });
+        if (!isActive) return;
+        const apiNotes: { timestamp: string; emotion: string; text: string }[] =
+          response.data;
         const sorted = apiNotes.sort(
           (a, b) =>
             dayjs(b.timestamp).tz(timezone).valueOf() -
             dayjs(a.timestamp).tz(timezone).valueOf()
         );
-
-        // Mapear a tipo Note con hora formateada en zona local y hora12
-        const adaptedNotes: Note[] = [];
-        for (let i = 0; i < sorted.length; i++) {
-          const item = sorted[i];
-          const timeStr = dayjs(item.timestamp).tz(timezone).format("hh:mm A"); // Formato 12h con AM/PM
-          adaptedNotes.push({
-            hour: timeStr,
-            emotion: item.emotion,
-            text: item.text,
-          });
-        }
-
-        setNotes(adaptedNotes);
-      } catch (error) {
-        console.error("Error fetching mood notes:", error);
-        setNotes([]);
+        const adapted = sorted.map((item) => ({
+          hour: dayjs(item.timestamp).tz(timezone).format("hh:mm A"),
+          emotion: item.emotion,
+          text: item.text,
+        }));
+        setNotes(adapted);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (isActive) setError(msg || "Error fetching notes");
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
-
     fetchNotesByDate();
+    return () => {
+      isActive = false;
+    };
   }, [dateParam, getToken]);
 
   return (
@@ -91,50 +68,19 @@ export default function MoodNotes() {
           Notas de estado de ánimo
         </h1>
         <p className="text-center text-sm md:text-base">
-          Tus emociones de la fecha: <br className="block md:hidden" /> <span className="hidden md:inline"></span> <b>{dateParam}</b>{" "}
+          Tus emociones de la fecha: <b>{dateParam}</b>
         </p>
       </div>
 
-      {/* <<<<<<< HEAD */}
       <div className="grid grid-cols-1 place-items-center gap-4 p-4 text-sm md:text-base">
-        {/* {DatesFromParam.map((note, index) => ( */}
+        {error && <p className="text-red-600">{error}</p>}
         {loading ? (
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         ) : notes.length > 0 ? (
-          (() => {
-            const notesElements = [];
-            for (let i = 0; i < notes.length; i++) {
-              const note = notes[i];
-              notesElements.push(
-                <Notes
-                  key={note.hour + note.text}
-                  hour={note.hour}
-                  emotion={note.emotion}
-                  text={note.text}
-                />
-              );
-            }
-            return notesElements;
-          })()
+          notes.map((note, idx) => <Notes key={idx} {...note} />)
         ) : (
           <p>No hay notas para esta fecha.</p>
         )}
-
-        {/* {loading ? (
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-    ) : notes.length > 0 ? (
-      notes.map((note, index) => (
-        <Notes
-          key={index}
-          hour={note.hour}
-          emotion={note.emotion}
-          text={note.text}
-        />
-      ))
-    ) : (
-      <p>No hay notas para esta fecha.</p>
-    )}
->>>>>>> c751bc87e247351fb8ab546f6fe88599c0592837 */}
       </div>
     </>
   );

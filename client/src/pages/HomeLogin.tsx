@@ -160,8 +160,8 @@ export default function HomeLogin() {
                 <Tooltip key={key}>
                   <TooltipTrigger asChild>
                     <button
-                      className={`emoji-button transition-transform duration-200 ${selectedEmoji === emoji ? "scale-150" : ""} ${bounceEmoji === emoji ? "animate-bounce" : ""}`}
-                      onClick={() => handleEmojiClick(emoji)}
+                      className={`emoji-button transition-transform duration-200 ${selectedEmoji === key ? "scale-150" : ""} ${bounceEmoji === key ? "animate-bounce" : ""}`}
+                      onClick={() => handleEmojiClick(key)}
                       aria-label={key}
                       type="button"
                     >
