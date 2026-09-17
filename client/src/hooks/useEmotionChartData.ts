@@ -1,4 +1,3 @@
-import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -19,7 +18,6 @@ const chartConfig = {
 const emotionKeys = Object.keys(chartConfig) as Array<keyof typeof chartConfig>;
 
 export function useEmotionChartData() {
-  const { getToken } = useAuth();
   const [timeRange, setTimeRange] = useState("1d");
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const timezoneStr = useMemo(() => dayjs.tz.guess(), []);
@@ -32,12 +30,10 @@ export function useEmotionChartData() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const token = await getToken();
-        if (!token || !isActive) return;
+        if (!isActive) return;
 
         const referenceDate = dayjs().tz(timezoneStr).format("YYYY-MM-DD");
         const response = await api.get("/moods/chart", {
-          headers: { Authorization: `Bearer ${token}` },
           params: {
             range: timeRange,
             date: referenceDate,
@@ -91,7 +87,7 @@ export function useEmotionChartData() {
       isActive = false;
       controller.abort();
     };
-  }, [timeRange, timezoneStr, getToken]);
+  }, [timeRange, timezoneStr]);
 
   return {
     chartData,

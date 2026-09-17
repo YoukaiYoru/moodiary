@@ -1,14 +1,14 @@
 const express = require('express');
 const UserDailyQuoteService = require('../services/userDailyQuote.service');
-const { requireAuth, getAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 
 const router = express.Router();
 const service = new UserDailyQuoteService();
 
 // Route to list all user daily quotes
-router.get('/', requireAuth(), async (req, res, next) => {
+  router.get('/', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const dailyQuotes = await service.find({ user_id: userId });
     res.json(dailyQuotes);
   } catch (error) {
@@ -17,9 +17,9 @@ router.get('/', requireAuth(), async (req, res, next) => {
 });
 
 // Route to create a new user daily quote
-router.post('/', requireAuth(), async (req, res, next) => {
+  router.post('/', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const data = { ...req.body, user_id: userId };
     const newDailyQuote = await service.create(data);
     res.status(201).json(newDailyQuote);
@@ -29,9 +29,9 @@ router.post('/', requireAuth(), async (req, res, next) => {
 });
 
 // Route to edit a user daily quote
-router.put('/:id', requireAuth(), async (req, res, next) => {
+  router.put('/:id', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { id } = req.params;
     const data = req.body;
     const updatedDailyQuote = await service.update(id, data, userId);
@@ -42,9 +42,9 @@ router.put('/:id', requireAuth(), async (req, res, next) => {
 });
 
 // Route to delete a user daily quote
-router.delete('/:id', requireAuth(), async (req, res, next) => {
+  router.delete('/:id', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { id } = req.params;
     const result = await service.delete(id, userId);
     res.json(result);

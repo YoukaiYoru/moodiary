@@ -2,8 +2,7 @@ const boom = require('@hapi/boom');
 const { models } = require('../libs/sequelize');
 
 class UserProfileService {
-  // Obtener perfil por user_id de Clerk
-  async findByClerkId(userId) {
+  async findByUserId(userId) {
     const profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });

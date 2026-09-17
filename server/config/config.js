@@ -19,9 +19,13 @@ const config = {
   dbHost: process.env.DB_HOST,
   dbName: process.env.DB_NAME,
   dbPort: process.env.DB_PORT,
-  clerkSecretKey: process.env.CLERK_SECRET_KEY,
-  clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY,
-  clerkWebhookSigningSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
+  authCookieSameSite:
+    process.env.AUTH_COOKIE_SAME_SITE || (environment === 'production' ? 'none' : 'lax'),
+  authCookieSecure:
+    process.env.AUTH_COOKIE_SECURE === 'true' || environment === 'production',
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+  geminiTimeoutMs: Number(process.env.GEMINI_TIMEOUT_MS || 12000),
   frontendUrls: (process.env.FRONTEND_URLS || '')
     .split(',')
     .map((origin) => origin.trim())
@@ -42,8 +46,6 @@ function validateConfig() {
 
   if (config.isProd) {
     required.push(
-      'CLERK_SECRET_KEY',
-      'CLERK_WEBHOOK_SIGNING_SECRET',
       'FRONTEND_URLS',
     );
   }
@@ -59,6 +61,17 @@ function validateConfig() {
 
   if (!Number.isInteger(config.ollamaTimeoutMs) || config.ollamaTimeoutMs < 1000) {
     throw new Error('OLLAMA_TIMEOUT_MS debe ser un entero mayor o igual a 1000');
+  }
+
+  if (!Number.isInteger(config.geminiTimeoutMs) || config.geminiTimeoutMs < 1000) {
+    throw new Error('GEMINI_TIMEOUT_MS debe ser un entero mayor o igual a 1000');
+  }
+
+  if (!['lax', 'strict', 'none'].includes(config.authCookieSameSite)) {
+    throw new Error('AUTH_COOKIE_SAME_SITE debe ser lax, strict o none');
+  }
+  if (config.authCookieSameSite === 'none' && !config.authCookieSecure) {
+    throw new Error('AUTH_COOKIE_SECURE=true es obligatorio con SameSite=None');
   }
 }
 

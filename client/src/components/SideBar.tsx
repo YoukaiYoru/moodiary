@@ -2,7 +2,6 @@ import React from "react";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
-import { useAuth } from "@clerk/clerk-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -25,7 +24,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@ui/popover";
 import { Button } from "@ui/button";
 import { Calendar } from "@ui/calendar";
-import { UserButton } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
 
@@ -41,7 +40,7 @@ import {
 dayjs.extend(timezone);
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { getToken } = useAuth();
+  const { user, logout } = useAuth();
   const [date, setDate] = React.useState<Date>();
 
   const context = React.useContext(NoteUpdateContext);
@@ -52,11 +51,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   // Fetch para obtener fechas y agregarlas al contexto si hay diferencias
   const fetchDates = React.useCallback(async (signal: AbortSignal) => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
       const response = await api.get("/moods/dates", {
-        headers: { Authorization: `Bearer ${token}` },
         params: { timezone: dayjs.tz.guess() },
         signal,
       });
@@ -73,7 +68,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     } catch (error) {
       if (!signal.aborted) console.error("Error fetching dates:", error);
     }
-  }, [getToken, setDates]);
+  }, [setDates]);
 
   // Una sola consulta hidrata las fechas del calendario y la lista de notas.
   React.useEffect(() => {
@@ -210,8 +205,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="m-2 p-1 transition duration-200 flex items-center font-delius">
-        <UserButton showName />
+      <SidebarFooter className="m-2 flex items-center justify-between gap-2 p-1 font-delius">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#DDECEF] text-sm font-semibold text-[#455763]" aria-hidden="true">
+            {(user?.displayName || user?.email || "M").slice(0, 1).toUpperCase()}
+          </div>
+          <span className="min-w-0 truncate text-sm text-[#455763]">{user?.displayName || user?.email}</span>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => void logout()} className="shrink-0 text-[#68777D] hover:text-[#455763]">Salir</Button>
       </SidebarFooter>
     </Sidebar>
   );

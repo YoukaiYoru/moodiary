@@ -1,30 +1,23 @@
-const { getAuth, requireAuth } = require('@clerk/express');
 const { models } = require('../libs/sequelize');
-
-const clerkAuthMiddleware = requireAuth({
-  unauthorizedHandler: (req, res) => {
-    res.status(401).json({ error: 'No autorizado' });
-  },
-});
 
 function redirectIfUnauthenticated(req, res, next) {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth?.userId;
 
     if (!userId) {
-      return res.redirect(`https://deep-pipefish-84.accounts.dev/sign-in`);
+      return res.status(401).json({ error: 'No autorizado' });
     }
 
     next();
   } catch (error) {
-    console.error('Clerk error:', error.message);
+    console.error('Auth error:', error.message);
     res.status(401).send('Not authenticated');
   }
 }
 
 async function ensureUserProfile(req, res, next) {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth?.userId;
     if (!userId) return next();
 
     await models.UserProfile.findOrCreate({
@@ -43,7 +36,6 @@ async function ensureUserProfile(req, res, next) {
 }
 
 module.exports = {
-  clerkAuthMiddleware,
   redirectIfUnauthenticated,
   ensureUserProfile,
 };

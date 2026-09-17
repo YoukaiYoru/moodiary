@@ -5,8 +5,18 @@ const USER_PROFILE_TABLE = 'user_profiles';
 const UserProfileSchema = {
   user_id: {
     allowNull: false,
-    type: DataTypes.STRING, // Clerk usa STRING para el ID de usuario
+    type: DataTypes.STRING,
     primaryKey: true,
+  },
+  email: {
+    allowNull: true,
+    type: DataTypes.STRING,
+    unique: true,
+    validate: { isEmail: true },
+  },
+  password_hash: {
+    allowNull: true,
+    type: DataTypes.TEXT,
   },
   display_name: {
     type: DataTypes.TEXT,
@@ -15,6 +25,11 @@ const UserProfileSchema = {
     type: DataTypes.TEXT,
   },
   created_at: {
+    allowNull: false,
+    type: DataTypes.DATE,
+    defaultValue: Sequelize.NOW,
+  },
+  updated_at: {
     allowNull: false,
     type: DataTypes.DATE,
     defaultValue: Sequelize.NOW,

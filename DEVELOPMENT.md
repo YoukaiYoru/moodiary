@@ -8,7 +8,7 @@ Documento operativo para desarrollar, probar y desplegar Moodiary sin exponer se
 Vercel (React/Vite)
         |
         v
-API Express + Clerk
+API Express + sesiones locales
    |              |
    v              v
 Supabase       Ollama
@@ -16,7 +16,7 @@ PostgreSQL     gemma3:4b
 ~~~
 
 - client/: React 19, TypeScript, Vite, Tailwind y Radix.
-- server/: Express 5, Sequelize 6, PostgreSQL y Clerk Express.
+- server/: Express 5, Sequelize 6, PostgreSQL y autenticación local.
 - server/db/: modelos y migraciones Sequelize.
 - server/services/: lógica de negocio y generación de frases IA.
 - docker-compose.prod.yml: Ollama, descarga del modelo, backend y migraciones.
@@ -27,7 +27,6 @@ PostgreSQL     gemma3:4b
 - Node.js 20 LTS recomendado.
 - npm.
 - PostgreSQL local o Supabase.
-- Clerk con claves del entorno correspondiente.
 - Ollama local para generar frases durante desarrollo.
 
 ~~~bash
@@ -62,21 +61,19 @@ PORT=5001
 DATABASE_URL=postgresql://USUARIO:CONTRASEÑA@HOST:5432/postgres
 DB_SSL=true
 DB_IP_FAMILY=4
-CLERK_SECRET_KEY=sk_test_...
-CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_WEBHOOK_SIGNING_SECRET=
+AUTH_COOKIE_SAME_SITE=lax
+AUTH_COOKIE_SECURE=false
 FRONTEND_URLS=http://localhost:5173,http://localhost:3000
 ADMIN_USER_IDS=
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=gemma3:4b
-OLLAMA_TIMEOUT_MS=30000
+GEMINI_API_KEY=REEMPLAZAR
+GEMINI_MODEL=gemini-2.0-flash
+GEMINI_TIMEOUT_MS=12000
 ~~~
 
 ### Frontend local
 
 ~~~env
 VITE_API_URL=http://localhost:5001/api/v1
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 ~~~
 
 Solo las variables con prefijo VITE_ llegan al navegador. Nunca pongas allí claves secretas, contraseñas, DATABASE_URL u OLLAMA_BASE_URL.
@@ -96,31 +93,28 @@ DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres.project_ref
 DB_PASSWORD=REEMPLAZAR
-CLERK_SECRET_KEY=sk_live_...
-CLERK_PUBLISHABLE_KEY=pk_live_...
-CLERK_WEBHOOK_SIGNING_SECRET=REEMPLAZAR
+AUTH_COOKIE_SAME_SITE=none
+AUTH_COOKIE_SECURE=true
 FRONTEND_URLS=https://moodiary.vercel.app,https://moodiary.com
 ADMIN_USER_IDS=user_xxx
-OLLAMA_BASE_URL=http://ollama:11434
-OLLAMA_MODEL=gemma3:4b
-OLLAMA_TIMEOUT_MS=30000
+GEMINI_API_KEY=REEMPLAZAR
+GEMINI_MODEL=gemini-2.0-flash
+GEMINI_TIMEOUT_MS=12000
 ~~~
 
 Frontend, en Vercel:
 
 ~~~env
 VITE_API_URL=https://api.tudominio.com/api/v1
-VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
 ~~~
 
 Si la contraseña de PostgreSQL contiene caracteres especiales, codifícala en la URL: @ → %40, # → %23, ! → %21.
 
 ## Seguridad de secretos
 
-- Las claves compartidas o expuestas deben revocarse y regenerarse.
-- Nunca subas archivos .env, claves Clerk, contraseñas ni URLs de base de datos reales.
-- No uses CLERK_SECRET_KEY en Vercel.
-- No uses DATABASE_URL ni OLLAMA_BASE_URL en el cliente.
+- Nunca subas archivos .env, contraseñas ni URLs de base de datos reales.
+- No uses DATABASE_URL, GEMINI_API_KEY ni OLLAMA_BASE_URL en el cliente.
+- Como frontend y API están en dominios distintos, producción usa `AUTH_COOKIE_SAME_SITE=none` junto con `AUTH_COOKIE_SECURE=true`.
 
 ~~~bash
 git check-ignore -v server/.env server/.env.production client/.env .env.prod
@@ -237,11 +231,8 @@ Base URL:
 /api/v1
 ~~~
 
-Las rutas protegidas requieren:
-
-~~~http
-Authorization: Bearer <token Clerk>
-~~~
+Las rutas protegidas requieren la cookie HttpOnly `moodiary_session`. El cliente
+usa Axios con `withCredentials: true`.
 
 | Método | Ruta | Uso |
 |---|---|---|
@@ -254,13 +245,16 @@ Authorization: Bearer <token Clerk>
 | GET | /moods/chart | Datos del gráfico |
 | GET | /motivationalQuotes/today | Frase del día/IA |
 | GET/PATCH | /profile | Perfil propio |
-| POST | /clerk/webhook | Sincronización Clerk |
+| POST | /auth/register | Crear cuenta e iniciar sesión |
+| POST | /auth/login | Iniciar sesión |
+| GET | /auth/me | Consultar sesión actual |
+| POST | /auth/logout | Revocar sesión |
 
 Los catálogos de emociones, tags y frases son de lectura pública, pero su escritura requiere un ID incluido en ADMIN_USER_IDS.
 
 ## Seguridad implementada
 
-- CORS y authorizedParties se configuran con FRONTEND_URLS.
+- CORS y el guard de origen se configuran con FRONTEND_URLS.
 - Se desactiva X-Powered-By y se agregan cabeceras HTTP defensivas.
 - Body JSON limitado a 20 KB.
 - Rate limiting básico por IP con respuesta 429.
@@ -313,7 +307,7 @@ Output Directory: dist
 Install Command: npm install
 ~~~
 
-Después de obtener el dominio definitivo, añádelo a FRONTEND_URLS y a los dominios autorizados en Clerk.
+Después de obtener el dominio definitivo, añádelo a `FRONTEND_URLS` y verifica que la cookie pueda viajar entre frontend y API.
 
 ## VPS Oracle
 
@@ -344,11 +338,11 @@ Usa Caddy para api.tudominio.com y deja Ollama en la red interna de Docker. Veri
 
 ~~~text
 Frontend → /motivationalQuotes/today
-        → Clerk valida token
+        → la cookie HttpOnly identifica la sesión
         → backend calcula estadísticas
         → reutiliza caché IA o llama a Ollama
-        → guarda message + source=ollama
-        → fallback si Ollama no está disponible
+        → guarda message + source=gemini
+        → fallback si Gemini no está disponible
 ~~~
 
 ## Checklist antes de release
@@ -371,7 +365,7 @@ Confirma además:
 
 - no hay secretos en el diff;
 - Supabase Pooler conecta por SSL;
-- Clerk usa el mismo entorno que el frontend;
+- La migración `add-local-auth` fue ejecutada en la base de datos;
 - FRONTEND_URLS coincide exactamente con Vercel;
 - el modelo existe en el VPS;
 - Ollama no tiene puerto público;
@@ -382,7 +376,7 @@ Confirma además:
 
 ### Alta prioridad
 
-- Añadir pruebas automatizadas de autenticación, aislamiento por usuario y webhook Clerk.
+- Añadir pruebas automatizadas de registro/login, expiración de sesión y aislamiento por usuario.
 - Validar con Joi todos los params y query numéricos.
 - Añadir esquemas Joi para tags, perfiles, frases y relaciones.
 - Sustituir el rate limiter en memoria por Redis si se despliegan varias réplicas.
@@ -402,7 +396,7 @@ Confirma además:
 - Documentar OpenAPI.
 - Añadir tests E2E con Playwright.
 - Definir backup y recuperación de producción.
-- Coordinar eliminación de cuenta entre Clerk y Supabase.
+- Añadir recuperación de contraseña y verificación de correo si el producto las necesita.
 
 ## Diagnóstico rápido
 
@@ -416,7 +410,7 @@ DB_IP_FAMILY=4
 
 ### Foreign key de usuario
 
-El perfil Clerk no existe en user_profiles. Revisa el webhook y ensureUserProfile.
+Ejecuta la migración `20260917113000-add-local-auth.js` antes de usar el modal.
 
 ### Dashboard sin datos
 
@@ -437,4 +431,3 @@ docker-compose -f docker-compose.prod.yml logs backend
 ~~~
 
 Revisa variables obligatorias, migraciones y conexión con Supabase.
-

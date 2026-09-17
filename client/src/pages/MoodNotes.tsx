@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Notes from "@/components/Notes";
 import api from "@/lib/axios";
-import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -14,7 +13,6 @@ type Note = { hour: string; emotion: string; text: string };
 
 export default function MoodNotes() {
   const { id: dateParam } = useParams<{ id: string }>();
-  const { getToken } = useAuth();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -28,11 +26,8 @@ export default function MoodNotes() {
       setLoading(true);
       setError(null);
       try {
-        const token = await getToken();
-        if (!token) throw new Error("Authentication failed");
         const timezone = dayjs.tz.guess();
         const response = await api.get(`moods/entries/${dateParam}`, {
-          headers: { Authorization: `Bearer ${token}` },
           params: { timeZone: timezone },
           signal: controller.signal,
         });
@@ -64,7 +59,7 @@ export default function MoodNotes() {
       isActive = false;
       controller.abort();
     };
-  }, [dateParam, getToken]);
+  }, [dateParam]);
 
   return (
     <>

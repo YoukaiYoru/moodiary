@@ -5,7 +5,7 @@ const MoodEntryService = require('../services/moodEntry.service');
 const router = express.Router();
 const service = new MotivationalQuoteService();
 const moodEntryService = new MoodEntryService();
-const { requireAuth, getAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 const { requireAdmin } = require('../middlewares/security.handler');
 
 // Route to list all motivational quotes
@@ -18,9 +18,9 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/today', requireAuth(), async (req, res) => {
+router.get('/today', requireLocalAuth, async (req, res) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const timezone = req.query.timezone || 'UTC';
     const result = await service.getMotivationalQuoteForToday(
       userId,
@@ -37,7 +37,7 @@ router.get('/today', requireAuth(), async (req, res) => {
 });
 
 // Route to create a new motivational quote
-router.post('/', requireAuth(), requireAdmin, async (req, res, next) => {
+router.post('/', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const data = req.body;
     const newQuote = await service.create(data);
@@ -48,7 +48,7 @@ router.post('/', requireAuth(), requireAdmin, async (req, res, next) => {
 });
 
 // Route to edit a motivational quote
-router.put('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
+router.put('/:id', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -60,7 +60,7 @@ router.put('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
 });
 
 // Route to delete a motivational quote
-router.delete('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
+router.delete('/:id', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await service.delete(id);

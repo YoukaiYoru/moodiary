@@ -1,11 +1,6 @@
 // import { MdMenu } from "react-icons/md";
 // import { FaRegUser } from "react-icons/fa";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
-} from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const NavBarMenu = [
   {
@@ -31,6 +26,7 @@ const NavBarMenu = [
 ];
 
 const MainNav = () => {
+  const { user, logout } = useAuth();
   return (
     <div
       className="border-b border-[#D8E3E6] bg-white py-2.5 text-[#3F4B52]"
@@ -62,12 +58,9 @@ const MainNav = () => {
                             <p className="pl-2 font-bold">Iniciar Sesión</p>
 
                         </button> */}
-            <SignedOut>
-              <SignInButton />
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
+            {user ? (
+              <button type="button" onClick={() => void logout()} className="px-2 py-1.5 text-xs font-semibold uppercase">Salir</button>
+            ) : null}
           </ul>
         </div>
       </div>

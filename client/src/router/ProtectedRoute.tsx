@@ -1,22 +1,22 @@
-import { useUser } from "@clerk/clerk-react";
 import { Navigate } from "react-router-dom";
 import Loader from "@/components/Loader";
+import { useAuth } from "@/hooks/useAuth";
 type Props = {
   children: React.ReactNode;
 };
 
 export default function ProtectedRoute({ children }: Props) {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div>
-        <Loader isLoaded={isLoaded} />
+        <Loader isLoaded={false} />
       </div>
     );
   }
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
 

@@ -1,14 +1,14 @@
 const express = require('express');
 const MoodEntryTagService = require('../services/moodEntryTag.service');
-const { requireAuth, getAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 
 const router = express.Router();
 const service = new MoodEntryTagService();
 
 // Route to list all mood entry tags
-router.get('/', requireAuth(), async (req, res, next) => {
+  router.get('/', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const moodEntryTags = await service.findForUser(userId);
     res.json(moodEntryTags);
   } catch (error) {
@@ -17,9 +17,9 @@ router.get('/', requireAuth(), async (req, res, next) => {
 });
 
 // Route to create a new mood entry tag
-router.post('/', requireAuth(), async (req, res, next) => {
+  router.post('/', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const data = req.body;
     const newMoodEntryTag = await service.create(data, userId);
     res.status(201).json(newMoodEntryTag);
@@ -29,9 +29,9 @@ router.post('/', requireAuth(), async (req, res, next) => {
 });
 
 // Route to edit a mood entry tag
-router.put('/:entryId/:tagId', requireAuth(), async (req, res, next) => {
+  router.put('/:entryId/:tagId', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { entryId, tagId } = req.params;
     const data = req.body;
     const updatedMoodEntryTag = await service.update({ entryId, tagId }, data, userId);
@@ -42,9 +42,9 @@ router.put('/:entryId/:tagId', requireAuth(), async (req, res, next) => {
 });
 
 // Route to delete a mood entry tag
-router.delete('/:entryId/:tagId', requireAuth(), async (req, res, next) => {
+  router.delete('/:entryId/:tagId', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { entryId, tagId } = req.params;
     const result = await service.delete({ entryId, tagId }, userId);
     res.json(result);

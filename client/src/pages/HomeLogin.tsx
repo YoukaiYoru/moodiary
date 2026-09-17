@@ -14,7 +14,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
 import Emoji from "@/components/Emoji";
@@ -23,7 +22,6 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export default function HomeLogin() {
-  const { getToken } = useAuth();
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
@@ -74,10 +72,6 @@ export default function HomeLogin() {
     setSubmitting(true);
 
     try {
-      const token = await getToken();
-      if (!token)
-        throw new Error("No se pudo obtener el token de autenticación.");
-
       const res = await api.post(
         "/moods",
         {
@@ -85,11 +79,6 @@ export default function HomeLogin() {
           date: new Date().toISOString(),
           note: text,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
       );
 
       // Extraer y formatear fecha local correctamente

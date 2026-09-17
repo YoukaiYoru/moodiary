@@ -17,7 +17,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@clerk/express": "^1.4.17",
     "@hapi/boom": "^10.0.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",

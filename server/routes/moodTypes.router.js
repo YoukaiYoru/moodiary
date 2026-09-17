@@ -1,6 +1,6 @@
 const express = require('express');
 const MoodTypeService = require('../services/moodType.service');
-const { requireAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 const { requireAdmin } = require('../middlewares/security.handler');
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // Route to create a new mood type
-router.post('/', requireAuth(), requireAdmin, async (req, res, next) => {
+router.post('/', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const data = req.body;
     const newMoodType = await service.create(data);
@@ -28,7 +28,7 @@ router.post('/', requireAuth(), requireAdmin, async (req, res, next) => {
 });
 
 // Route to edit a mood type
-router.put('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
+router.put('/:id', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -40,7 +40,7 @@ router.put('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
 });
 
 // Route to delete a mood type
-router.delete('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
+router.delete('/:id', requireLocalAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await service.delete(id);

@@ -4,14 +4,14 @@ const Boom = require('@hapi/boom');
 const dayjs = require('dayjs');
 const timezone = require('dayjs/plugin/timezone');
 const utc = require('dayjs/plugin/utc');
-const OllamaService = require('./ollama.service');
+const GeminiService = require('./gemini.service');
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 class MotivationalQuoteService {
   constructor() {
-    this.ollamaService = new OllamaService();
+    this.geminiService = new GeminiService();
   }
 
   async find() {
@@ -55,12 +55,12 @@ class MotivationalQuoteService {
       include: { model: models.MotivationalQuote, as: 'quote' },
     });
 
-    // Las frases antiguas de fallback no bloquean una nueva generación con Ollama.
-    if (dailyQuote?.source === 'ollama' && dailyQuote.message) {
+    // Las frases antiguas de IA no bloquean una nueva generación con Gemini.
+    if (dailyQuote?.source === 'gemini' && dailyQuote.message) {
       return {
         mood_score: null,
         message: dailyQuote.message,
-        source: 'ollama',
+        source: 'gemini',
       };
     }
 
@@ -85,25 +85,25 @@ class MotivationalQuoteService {
 
     let generatedMessage = null;
     try {
-      generatedMessage = await this.ollamaService.generateDailyQuote({
+      generatedMessage = await this.geminiService.generateDailyQuote({
         average: moodStats.average,
         mood: moodStats.name,
         count: moodStats.count,
       });
     } catch (error) {
-      console.warn(`Ollama no disponible: ${error.message}`);
+      console.warn(`Gemini no disponible: ${error.message}`);
     }
 
     if (generatedMessage) {
       await this.saveDailyQuote(userId, quoteDate, {
         message: generatedMessage,
-        source: 'ollama',
+        source: 'gemini',
       });
 
       return {
         mood_score: averageMood,
         message: generatedMessage,
-        source: 'ollama',
+        source: 'gemini',
       };
     }
 

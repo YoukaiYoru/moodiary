@@ -1,9 +1,6 @@
 require('dotenv').config(); // Para cargar variables de entorno
 const express = require('express');
 const cors = require('cors');
-const {
-  clerkMiddleware,
-} = require('@clerk/express');
 const routerApi = require('./routes');
 const {
   logErrors,
@@ -11,7 +8,6 @@ const {
   boomErrorHandler,
   sequelizeErrorHandler,
 } = require('./middlewares/error.handler');
-const webHookRouter = require('./routes/webHook.router');
 
 const sequelize = require('./libs/sequelize'); // Ajusta la ruta según tu estructura
 const { config, validateConfig } = require('./config/config');
@@ -29,9 +25,6 @@ app.use(createRateLimiter({ windowMs: 60_000, max: 180 }));
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
-
-//Webhook de Clerk para actualizar usuarios
-app.use('/clerk/webhook', webHookRouter);
 
 app.use(express.json({ limit: '20kb' }));
 
@@ -53,11 +46,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.use(
-  clerkMiddleware({
-    authorizedParties: whitelist,
-  }),
-);
+app.use((req, res, next) => {
+  const unsafe = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  const origin = req.headers.origin;
+  if (unsafe && origin && !whitelist.includes(origin)) {
+    return res.status(403).json({ error: 'Origen no permitido.' });
+  }
+  next();
+});
+
+const { localAuthMiddleware } = require('./middlewares/local-auth.handler');
+app.use(localAuthMiddleware);
 
 // Rutas de la API
 routerApi(app);
@@ -68,7 +67,7 @@ app.use(boomErrorHandler);
 app.use(sequelizeErrorHandler);
 app.use(errorHandler);
 
-// Iniciar servidor (solo DB y servidor, sin syncClerkUsers)
+// Iniciar servidor (solo DB y servidor)
 (async () => {
   try {
     validateConfig();

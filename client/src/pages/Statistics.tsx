@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/axios";
 import ChartEmotion from "@/components/ChartEmotion";
-import { useAuth } from "@clerk/clerk-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -19,7 +18,6 @@ export default function Statistics() {
   const [loadingAverageMood, setLoadingAverageMood] = useState(true);
   const [loadingCalendar, setLoadingCalendar] = useState(true);
 
-  const { getToken } = useAuth();
   const [phrase, setPhrase] = useState("No hay frase motivacional disponible");
   const [calendar, setCalendar] = useState<
     | {
@@ -43,24 +41,19 @@ export default function Statistics() {
       setLoadingAverageMood(true);
       setLoadingCalendar(true);
       try {
-        const token = await getToken();
-        if (!token) throw new Error("Authentication failed");
         const tz = dayjs.tz.guess();
         const today = dayjs().tz(tz).format("YYYY-MM-DD");
         const now = dayjs().tz(tz);
         const [quoteRes, avgRes, calRes] = await Promise.allSettled([
           api.get("/motivationalQuotes/today", {
-            headers: { Authorization: `Bearer ${token}` },
             params: { timezone: tz },
             signal: controller.signal,
           }),
           api.get("/moods/average/today", {
-            headers: { Authorization: `Bearer ${token}` },
             params: { date: today, timezone: tz },
             signal: controller.signal,
           }),
           api.get("/moods/average/by-date", {
-            headers: { Authorization: `Bearer ${token}` },
             params: { timezone: tz, year: now.year(), month: now.month() + 1 },
             signal: controller.signal,
           }),
@@ -116,7 +109,7 @@ export default function Statistics() {
       isActive = false;
       controller.abort();
     };
-  }, [getToken]);
+  }, []);
 
   // Memoize calendar mapping for EmojiCalendar
   const calendarMap = useMemo(() => {

@@ -11,6 +11,7 @@ const {
   UserDailyQuote,
   UserDailyQuoteSchema,
 } = require('./userDailyQuote.model');
+const { AuthSession, AuthSessionSchema } = require('./authSession.model');
 
 function setupModels(sequelize) {
   // Inicialización
@@ -22,6 +23,7 @@ function setupModels(sequelize) {
     MotivationalQuote.config(sequelize),
   );
   UserDailyQuote.init(UserDailyQuoteSchema, UserDailyQuote.config(sequelize));
+  AuthSession.init(AuthSessionSchema, AuthSession.config(sequelize));
   Tag.init(TagSchema, Tag.config(sequelize));
   MoodEntryTag.init(MoodEntryTagSchema, MoodEntryTag.config(sequelize));
 
@@ -31,6 +33,7 @@ function setupModels(sequelize) {
   MoodEntry.associate(sequelize.models);
   MotivationalQuote.associate(sequelize.models);
   UserDailyQuote.associate(sequelize.models);
+  AuthSession.belongsTo(UserProfile, { foreignKey: 'user_id', as: 'user' });
   Tag.associate(sequelize.models);
   MoodEntryTag.associate?.(sequelize.models); // opcional en caso no tenga asociaciones directas
 }

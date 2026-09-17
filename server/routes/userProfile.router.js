@@ -1,25 +1,25 @@
 const express = require('express');
-const { requireAuth, getAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 const ProfileService = require('../services/userProfile.service');
 
 const router = express.Router();
 const service = new ProfileService();
 
 // GET /api/profile - Obtener el perfil del usuario actual
-router.get('/', requireAuth(), async (req, res, next) => {
+router.get('/', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
-    const profile = await service.findByClerkId(userId);
+    const userId = req.auth.userId;
+    const profile = await service.findByUserId(userId);
     res.json(profile);
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/mood', requireAuth(), async (req, res, next) => {
+router.get('/mood', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
-    const profile = await service.findByClerkId(userId);
+    const userId = req.auth.userId;
+    const profile = await service.findByUserId(userId);
     res.json({ mood: profile.preferred_mood });
   } catch (error) {
     next(error);
@@ -29,7 +29,7 @@ router.get('/mood', requireAuth(), async (req, res, next) => {
 // POST /api/profile - Crear perfil si no existe (opcional, útil al registrarse)
 router.post('/', async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const profile = await service.createIfNotExists(userId);
     res.status(201).json(profile);
   } catch (error) {
@@ -40,7 +40,7 @@ router.post('/', async (req, res, next) => {
 // PATCH /api/profile - Actualizar campos del perfil (ej. mood, notas)
 router.patch('/', async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const allowed = ['display_name', 'preferred_mood'];
     const changes = Object.fromEntries(
       Object.entries(req.body).filter(([key]) => allowed.includes(key)),
@@ -55,7 +55,7 @@ router.patch('/', async (req, res, next) => {
 // DELETE /api/profile - Eliminar perfil (si decides permitirlo)
 router.delete('/', async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const result = await service.delete(userId);
     res.json(result);
   } catch (error) {

@@ -7,7 +7,7 @@ const {
   getOneMoodEntrySchema,
 } = require('../schema/moodEntry.schema');
 const validatorHandler = require('../middlewares/validator.handler');
-const { requireAuth, getAuth } = require('@clerk/express');
+const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 
 const router = express.Router();
 
@@ -16,9 +16,9 @@ const service = new MoodEntryService();
 const moodTypeService = new MoodTypeService();
 
 // ✅ Obtener una entrada específica por ID (autenticado)
-router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
+router.get('/entry/:entryId', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { entryId } = req.params;
     const entry = await service.findOneByUserId(userId, parseInt(entryId));
     res.json(entry);
@@ -28,9 +28,9 @@ router.get('/entry/:entryId', requireAuth(), async (req, res, next) => {
 });
 
 // ✅ Obtener promedio de hoy (autenticado)
-router.get('/average/today', requireAuth(), async (req, res, next) => {
+router.get('/average/today', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { date, timezone = 'UTC' } = req.query;
     const { average, emoji, name, count } = await service.getAverageMoodToday(
       userId,
@@ -43,9 +43,9 @@ router.get('/average/today', requireAuth(), async (req, res, next) => {
   }
 });
 
-router.get('/average/by-date', requireAuth(), async (req, res, next) => {
+router.get('/average/by-date', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { timezone, year, month } = req.query; // timezone obligatorio, year y month opcionales
 
     if (!timezone) {
@@ -79,11 +79,11 @@ router.get('/average/by-date', requireAuth(), async (req, res, next) => {
 // ✅ Crear nueva entrada (autenticado)
 router.post(
   '/',
-  requireAuth(),
+  requireLocalAuth,
   validatorHandler(createMoodEntrySchema),
   async (req, res, next) => {
     try {
-      const { userId } = getAuth(req);
+      const userId = req.auth.userId;
       const moodType = await moodTypeService.findByName(req.body.mood);
       if (!moodType) {
         return res
@@ -108,10 +108,10 @@ router.post(
 router.get(
   '/all',
   validatorHandler(getMoodEntrySchema),
-  requireAuth(),
+  requireLocalAuth,
   async (req, res, next) => {
     try {
-      const { userId } = getAuth(req);
+      const userId = req.auth.userId;
       const entries = await service.find({ user_id: userId });
       res.json(entries);
     } catch (error) {
@@ -120,9 +120,9 @@ router.get(
   },
 );
 
-router.get('/dates', requireAuth(), async (req, res, next) => {
+router.get('/dates', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const dates = await service.findDistinctDates(userId, req.query.timezone);
     res.json(dates);
   } catch (error) {
@@ -131,9 +131,9 @@ router.get('/dates', requireAuth(), async (req, res, next) => {
 });
 
 // ✅ Obtener resumen estadístico (mock)
-router.get('/chart', requireAuth(), async (req, res, next) => {
+router.get('/chart', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { range = '1d', date, timezone = 'UTC' } = req.query;
 
     // Llamar servicio con params, timezone por defecto 'UTC'
@@ -145,9 +145,9 @@ router.get('/chart', requireAuth(), async (req, res, next) => {
   }
 });
 // ✅ Obtener entradas por fecha
-router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
+router.get('/entries/:isoDate', requireLocalAuth, async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const { isoDate } = req.params;
     const timeZone = req.query.timeZone;
 
@@ -171,12 +171,12 @@ router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
 
 router.put(
   '/:entryId',
-  requireAuth(),
+  requireLocalAuth,
   validatorHandler(createMoodEntrySchema),
   async (req, res, next) => {
     try {
       const { entryId } = req.params;
-      const { userId } = getAuth(req);
+      const userId = req.auth.userId;
       const updatedEntry = await service.updateByUserId(
         userId,
         parseInt(entryId, 10),
@@ -190,10 +190,10 @@ router.put(
 );
 
 // Eliminar entrada específica
-router.delete('/:entryId', requireAuth(), async (req, res, next) => {
+router.delete('/:entryId', requireLocalAuth, async (req, res, next) => {
   try {
     const { entryId } = req.params;
-    const { userId } = getAuth(req);
+    const userId = req.auth.userId;
     const result = await service.deleteByUserId(userId, parseInt(entryId, 10));
     res.json(result);
   } catch (error) {
