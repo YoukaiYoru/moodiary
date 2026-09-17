@@ -1,6 +1,7 @@
 const express = require('express');
 const TagService = require('../services/tag.service');
 const { requireAuth } = require('@clerk/express');
+const { requireAdmin } = require('../middlewares/security.handler');
 
 const router = express.Router();
 const service = new TagService();
@@ -16,7 +17,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // Route to create a new tag
-router.post('/', requireAuth(), async (req, res, next) => {
+router.post('/', requireAuth(), requireAdmin, async (req, res, next) => {
   try {
     const data = req.body;
     const newTag = await service.create(data);
@@ -27,7 +28,7 @@ router.post('/', requireAuth(), async (req, res, next) => {
 });
 
 // Route to edit a tag
-router.put('/:id', requireAuth(), async (req, res, next) => {
+router.put('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -39,7 +40,7 @@ router.put('/:id', requireAuth(), async (req, res, next) => {
 });
 
 // Route to delete a tag
-router.delete('/:id', requireAuth(), async (req, res, next) => {
+router.delete('/:id', requireAuth(), requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await service.delete(id);

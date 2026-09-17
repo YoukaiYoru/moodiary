@@ -9,15 +9,16 @@ const motivationalQuotesRouter = require('./motivationalQuotes.router');
 const tagsRouter = require('./tags.router');
 const userDailyQuotesRouter = require('./userDailyQuotes.router');
 const { ensureUserProfile } = require('../middlewares/auth.handler');
+const { requireAdmin } = require('../middlewares/security.handler');
 
 function routerApi(app) {
   const router = express.Router();
   app.use('/api/v1', router);
 
   // Rutas públicas
-  router.use('/moodTypes', moodTypesRouter); // No protegida
-  router.use('/motivationalQuotes', motivationalQuotesRouter); // No protegida
-  router.use('/tags', tagsRouter); // No protegida
+  router.use('/moodTypes', moodTypesRouter); // Lectura pública; escritura administrativa
+  router.use('/motivationalQuotes', motivationalQuotesRouter); // Lectura pública; escritura administrativa
+  router.use('/tags', tagsRouter); // Lectura pública; escritura administrativa
   // Rutas protegidas (requieren autenticación)
   router.use('/moods', requireAuth(), ensureUserProfile, moodEntriesRouter); // Protegida
   router.use('/profile', requireAuth(), ensureUserProfile, userProfileRouter); // Protegida

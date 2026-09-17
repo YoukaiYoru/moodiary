@@ -15,8 +15,16 @@ const webHookRouter = require('./routes/webHook.router');
 
 const sequelize = require('./libs/sequelize'); // Ajusta la ruta según tu estructura
 const { config, validateConfig } = require('./config/config');
+const {
+  securityHeaders,
+  createRateLimiter,
+} = require('./middlewares/security.handler');
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use(securityHeaders);
+app.use(createRateLimiter({ windowMs: 60_000, max: 180 }));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
@@ -30,13 +38,9 @@ app.use(express.json({ limit: '20kb' }));
 const port = config.port;
 
 // CORS Configuration
-const whitelist = [
-    'http://localhost:5001',
-  'https://www.moodiary.live',
-  'https://moodiary.live',
-  'http://localhost:3000',
-  'http://localhost:5173',
-];
+const whitelist = config.frontendUrls.length > 0
+  ? config.frontendUrls
+  : ['http://localhost:5173', 'http://localhost:3000'];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || whitelist.includes(origin)) {
@@ -51,12 +55,7 @@ app.use(cors(corsOptions));
 
 app.use(
   clerkMiddleware({
-    authorizedParties: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://moodiary.live',
-      'https://www.moodiary.live',
-    ],
+    authorizedParties: whitelist,
   }),
 );
 
