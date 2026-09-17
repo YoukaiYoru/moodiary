@@ -43,87 +43,48 @@ dayjs.extend(timezone);
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { getToken } = useAuth();
   const [date, setDate] = React.useState<Date>();
-  const [notes, setNotes] = React.useState<string[]>([]);
 
   const context = React.useContext(NoteUpdateContext);
   if (!context)
     throw new Error("AppSidebar must be used within NoteDatesProvider");
-  const { knownDates, addDate } = context;
+  const { knownDates, setDates } = context;
 
   // Fetch para obtener fechas y agregarlas al contexto si hay diferencias
-  const fetchDates = React.useCallback(async () => {
+  const fetchDates = React.useCallback(async (signal: AbortSignal) => {
     try {
       const token = await getToken();
       if (!token) return;
 
       const response = await api.get("/moods/dates", {
         headers: { Authorization: `Bearer ${token}` },
+        params: { timezone: dayjs.tz.guess() },
+        signal,
       });
 
       const newDates = Array.from(
         new Set(
           response.data.map((item: { created_at: string }) =>
-            dayjs(item.created_at).tz().format("YYYY-MM-DD")
+            dayjs(item.created_at).format("YYYY-MM-DD")
           )
         )
       );
 
-      const sortedPrev = Array.from(knownDates).sort();
-      const sortedNew = [...newDates].sort();
-
-      const isEqual =
-        sortedPrev.length === sortedNew.length &&
-        sortedPrev.every((v, i) => v === sortedNew[i]);
-
-      if (!isEqual) {
-        (newDates as string[]).forEach(addDate);
-      }
+      setDates(newDates as string[]);
     } catch (error) {
-      console.error("Error fetching dates:", error);
+      if (!signal.aborted) console.error("Error fetching dates:", error);
     }
-  }, [getToken, knownDates, addDate]);
+  }, [getToken, setDates]);
 
-  // Fetch notas agrupadas por fecha para renderizar en el sidebar
-  const fetchNotes = React.useCallback(async () => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      const response = await api.get("/moods/dates", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const groupedNotes: Record<string, string[]> = {};
-      response.data.forEach((note: { created_at: string; content: string }) => {
-        const noteDate = dayjs(note.created_at).tz().format("YYYY-MM-DD");
-        if (!groupedNotes[noteDate]) {
-          groupedNotes[noteDate] = [];
-        }
-        groupedNotes[noteDate].push(note.content);
-      });
-
-      const groupedDates = Object.keys(groupedNotes).sort().reverse();
-      setNotes(groupedDates);
-    } catch (error) {
-      console.error("Error fetching notes:", error);
-    }
-  }, [getToken]);
-
-  // Initial fetch of dates on mount
+  // Una sola consulta hidrata las fechas del calendario y la lista de notas.
   React.useEffect(() => {
-    fetchDates();
+    const controller = new AbortController();
+    fetchDates(controller.signal);
+    return () => controller.abort();
   }, [fetchDates]);
 
-  // Re-fetch notes whenever knownDates updates (e.g., after a POST)
-  React.useEffect(() => {
-    if (knownDates.size > 0) {
-      fetchNotes();
-    }
-  }, [knownDates, fetchNotes]);
-
   const filteredNotes = date
-    ? notes.filter((d) => d === dayjs(date).format("YYYY-MM-DD"))
-    : notes;
+    ? Array.from(knownDates).filter((d) => d === dayjs(date).format("YYYY-MM-DD"))
+    : Array.from(knownDates).sort().reverse();
 
   const renderNotes = () =>
     filteredNotes.map((note) => (
@@ -150,13 +111,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     <Sidebar
       collapsible="offcanvas"
       side="left"
-      variant="floating"
+      variant="sidebar"
       className="text-[#3a2f2f] font-delius transition-all duration-300 ease-in-out"
       {...props}
     >
       <SidebarContent className="bg-white">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[2.2rem] font-playwrite text-orange-500 flex justify-center items-center h-20">
+          <SidebarGroupLabel className="flex h-14 items-center justify-center font-playwrite text-[1.5rem] text-[#455763]">
             Moodiary
           </SidebarGroupLabel>
           <SidebarGroupContent>

@@ -35,6 +35,7 @@
 * 😊 **Registro de Emociones** con notas personalizadas
 * 📈 **Visualización de Datos** con gráficos interactivos
 * 🗓️ **Revisión Histórica** de emociones por fechas
+* 🤖 **Frases personalizadas** generadas localmente con Ollama
 * 📱 **Diseño Responsivo** para escritorio y móvil
 * 🌙☀️ **Modo Oscuro/Claro** adaptable a tus preferencias
 
@@ -70,6 +71,7 @@
 * ✅ Validación con Joi
 * 💥 Manejo de errores con @hapi/boom
 * 🔐 Clerk Express para auth en backend
+* 🤖 Ollama + Gemma 3 4B para frases diarias
 
 ---
 
@@ -100,12 +102,10 @@
    Crea un archivo `.env` con:
 
    ```
-   DB_USER=postgres
-   DB_PASSWORD=tu_password
-   DB_HOST=localhost
-   DB_NAME=moodiary
-   DB_PORT=5432
-   CLERK_SECRET_KEY=tu_clave_clerk
+   DATABASE_URL=postgresql://postgres:tu_password@localhost:5432/moodiary
+   DB_SSL=false
+   CLERK_SECRET_KEY=tu_clave_secreta_de_clerk
+   CLERK_WEBHOOK_SIGNING_SECRET=tu_secreto_de_webhook
    ```
 
    Luego ejecuta:
@@ -126,6 +126,7 @@
 
    ```
    VITE_CLERK_PUBLISHABLE_KEY=tu_clave_publica_de_clerk
+   VITE_API_URL=http://localhost:5001/api/v1
    ```
 
    Y ejecuta:
@@ -135,6 +136,47 @@
    ```
 
 4. Abre tu navegador en: `http://localhost:5173` 🚀
+
+### 🤖 Frases con Ollama
+
+Moodiary usa Ollama de forma local para generar una frase personalizada según
+el promedio y la cantidad de registros del día. No se envía la nota personal a
+ningún proveedor externo.
+
+Instala Ollama y descarga el modelo recomendado:
+
+```bash
+ollama pull gemma3:4b
+ollama serve
+```
+
+El servidor usa estas variables (incluidas en `server/.env.example`):
+
+```env
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=gemma3:4b
+OLLAMA_TIMEOUT_MS=8000
+```
+
+Si Ollama no está disponible, el backend utiliza una frase almacenada en
+PostgreSQL como fallback. La frase generada se guarda una vez por usuario y
+fecha en `user_daily_quote`.
+
+### 🐳 Producción con Docker Compose
+
+El archivo `docker-compose.prod.yml` está preparado para usar Supabase como
+base de datos externa y Ollama como servicio privado interno:
+
+```bash
+VITE_API_URL=https://api.tu-dominio.com/api/v1 \
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_xxx \
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+El compose descarga automáticamente `gemma3:4b`, ejecuta las migraciones y
+levanta el backend y frontend en el orden correcto. Antes de ejecutar el
+comando, configura `server/.env.production` con tus variables reales y no
+subas ese archivo al repositorio.
 
 ---
 
@@ -259,4 +301,3 @@ Este proyecto está licenciado bajo la [ISC License](https://opensource.org/lice
 * [Clerk](https://clerk.dev/) por hacer la autenticación sencilla
 * [Radix UI](https://www.radix-ui.com/) por sus componentes accesibles
 * [Tailwind CSS](https://tailwindcss.com/) por la potencia y velocidad para diseñar
-

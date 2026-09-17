@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "name": "Moodiary Calm Active",
+    "description": "Sistema de diseño para un diario emocional de uso diario, calmado, legible y orientado a una acción rápida.",
+    "version": "1.0.0",
+    "created": "2026-09-17",
+    "personality": "El blanco domina la interfaz para mantenerla limpia y ligera. El celeste aparece como una capa suave de apoyo, mientras que los grises estructuran la lectura y el azul pizarra concentra las acciones."
+  },
+  "colors": {
+    "primary": { "value": "#455763", "usage": "Acciones principales y foco de marca; usar con texto blanco." },
+    "primary-hover": { "value": "#374852", "usage": "Estado hover o active de la acción principal." },
+    "secondary": { "value": "#F1F8FA", "usage": "Superficies celestes suaves, selección y estados de descanso." },
+    "accent": { "value": "#AAB7BC", "usage": "Acento gris para foco y estados interactivos; el celeste queda reservado para fondos suaves." },
+    "background": { "value": "#FFFFFF", "usage": "Fondo principal de la aplicación." },
+    "surface": { "value": "#FFFFFF", "usage": "Paneles y cards con contenido real." },
+    "surface-elevated": { "value": "#FFFFFF", "usage": "Menús, popovers y superficies sobre el contenido." },
+    "border": { "value": "#D8E3E6", "usage": "Bordes, divisores y campos de formulario." },
+    "text-primary": { "value": "#3F4B52", "usage": "Títulos y texto principal." },
+    "text-secondary": { "value": "#68777D", "usage": "Ayudas, metadata y estados secundarios." },
+    "text-on-primary": { "value": "#FFFFFF", "usage": "Texto dentro de acciones azul pizarra." },
+    "success": { "value": "#2E7658", "usage": "Confirmaciones y estados guardados." },
+    "warning": { "value": "#956A1C", "usage": "Advertencias no destructivas." },
+    "error": { "value": "#B64242", "usage": "Errores y acciones destructivas." },
+    "info": { "value": "#2C6878", "usage": "Información contextual." }
+  },
+  "typography": {
+    "font-display": { "family": "Dosis", "fallback": "ui-sans-serif, sans-serif", "source": "Google Fonts" },
+    "font-body": { "family": "Delius", "fallback": "ui-sans-serif, sans-serif", "source": "Google Fonts" },
+    "font-accent": { "family": "Lobster", "fallback": "cursive", "source": "Google Fonts", "usage": "Frases breves y énfasis editorial, no controles." },
+    "scale": {
+      "xs": { "size": "0.75rem", "lineHeight": "1rem", "usage": "Metadata y ayuda secundaria" },
+      "sm": { "size": "0.875rem", "lineHeight": "1.25rem", "usage": "Labels y navegación" },
+      "base": { "size": "1rem", "lineHeight": "1.5rem", "usage": "Texto de lectura y formularios" },
+      "lg": { "size": "1.125rem", "lineHeight": "1.75rem", "usage": "Introducciones y contenido destacado" },
+      "xl": { "size": "1.25rem", "lineHeight": "1.75rem", "usage": "Títulos de sección" },
+      "2xl": { "size": "1.5rem", "lineHeight": "2rem", "usage": "Títulos de página en móvil" },
+      "3xl": { "size": "1.875rem", "lineHeight": "2.25rem", "usage": "Títulos de página en desktop" },
+      "display": { "size": "clamp(1.875rem, 5vw, 3.5rem)", "lineHeight": "1.05", "usage": "Solo el prompt principal de check-in" }
+    },
+    "weights": { "normal": 400, "medium": 500, "semibold": 600, "bold": 700 }
+  },
+  "spacing": {
+    "base-unit": "4px",
+    "scale": { "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", "12": "3rem", "16": "4rem" },
+    "rules": { "page-padding": "clamp(0.75rem, 3vw, 2rem)", "section-gap": "clamp(1.5rem, 4vw, 3rem)", "control-gap": "0.5rem" }
+  },
+  "borders": {
+    "radius": { "sm": "0.5rem", "md": "0.75rem", "lg": "1rem", "xl": "1.25rem", "full": "9999px" },
+    "width": { "default": "1px", "thick": "2px" }
+  },
+  "shadows": {
+    "sm": { "value": "0 2px 10px rgb(36 52 59 / 0.06)", "usage": "Inputs y cards pequeñas" },
+    "md": { "value": "0 10px 30px rgb(36 52 59 / 0.10)", "usage": "Paneles principales" },
+    "lg": { "value": "0 20px 48px rgb(36 52 59 / 0.14)", "usage": "Popovers y superficies flotantes" },
+    "glow": { "value": null, "usage": "No usar glow decorativo." }
+  },
+  "effects": {
+    "transition-default": "150ms cubic-bezier(0.16, 1, 0.3, 1)",
+    "transition-slow": "300ms cubic-bezier(0.16, 1, 0.3, 1)",
+    "focus-ring": "0 0 0 3px rgb(217 139 58 / 0.35)"
+  },
+  "components": {
+    "button": { "primary": { "bg": "colors.primary", "text": "colors.text-on-primary", "radius": "borders.radius.md", "padding": "spacing.3 spacing.4" }, "secondary": { "bg": "colors.secondary", "text": "colors.text-primary", "radius": "borders.radius.md", "border": "colors.border" }, "ghost": { "bg": "transparent", "text": "colors.text-secondary", "radius": "borders.radius.md" } },
+    "card": { "bg": "colors.surface", "radius": "borders.radius.lg", "shadow": "shadows.sm", "padding": "spacing.5", "border": "colors.border" },
+    "input": { "bg": "colors.surface", "border": "colors.border", "radius": "borders.radius.md", "text": "colors.text-primary", "placeholder": "colors.text-secondary", "focus-ring": "effects.focus-ring" }
+  }
+}

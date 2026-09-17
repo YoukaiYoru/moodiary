@@ -2,8 +2,8 @@ const { models } = require('../libs/sequelize');
 const boom = require('@hapi/boom');
 
 class UserDailyQuoteService {
-  async find() {
-    const quotes = await models.UserDailyQuote.findAll();
+  async find(filters = {}) {
+    const quotes = await models.UserDailyQuote.findAll({ where: filters });
     return quotes;
   }
 
@@ -20,14 +20,16 @@ class UserDailyQuoteService {
     return newQuote;
   }
 
-  async update(id, changes) {
-    const quote = await this.findOne(id);
+  async update(id, changes, userId) {
+    const quote = await models.UserDailyQuote.findOne({ where: { id, user_id: userId } });
+    if (!quote) throw boom.notFound('Quote not found');
     const updatedQuote = await quote.update(changes);
     return updatedQuote;
   }
 
-  async delete(id) {
-    const quote = await this.findOne(id);
+  async delete(id, userId) {
+    const quote = await models.UserDailyQuote.findOne({ where: { id, user_id: userId } });
+    if (!quote) throw boom.notFound('Quote not found');
     await quote.destroy();
     return { id };
   }

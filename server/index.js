@@ -3,9 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const {
   clerkMiddleware,
-  requireAuth,
-  getAuth,
-  clerkClient,
 } = require('@clerk/express');
 const routerApi = require('./routes');
 const {
@@ -17,19 +14,24 @@ const {
 const webHookRouter = require('./routes/webHook.router');
 
 const sequelize = require('./libs/sequelize'); // Ajusta la ruta según tu estructura
+const { config, validateConfig } = require('./config/config');
 
 const app = express();
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 //Webhook de Clerk para actualizar usuarios
 app.use('/clerk/webhook', webHookRouter);
 
-app.use(express.json());
+app.use(express.json({ limit: '20kb' }));
 
-const port = process.env.PORT || 5001;
+const port = config.port;
 
 // CORS Configuration
 const whitelist = [
-  'http://localhost:5001',
+    'http://localhost:5001',
   'https://www.moodiary.live',
   'https://moodiary.live',
   'http://localhost:3000',
@@ -47,17 +49,21 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Clerk Middleware
+app.use(
+  clerkMiddleware({
+    authorizedParties: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://moodiary.live',
+      'https://www.moodiary.live',
+    ],
+  }),
+);
 
-// Tus rutas (incluyendo la ruta webhook en routes/webHook.router.js)
+// Rutas de la API
 routerApi(app);
 
 // Middlewares para manejo de errores
-app.use(
-  clerkMiddleware({
-    authorizedParties: ['https://moodiary.live', 'https://www.moodiary.live'],
-  }),
-);
 app.use(logErrors);
 app.use(boomErrorHandler);
 app.use(sequelizeErrorHandler);
@@ -66,6 +72,8 @@ app.use(errorHandler);
 // Iniciar servidor (solo DB y servidor, sin syncClerkUsers)
 (async () => {
   try {
+    validateConfig();
+    await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida.');
 
     app.listen(port, () => {

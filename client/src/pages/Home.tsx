@@ -1,5 +1,5 @@
 import { SignInButton, useUser } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "@/components/Loader";
 import Footer from "@/components/Footer";
@@ -7,42 +7,27 @@ import Footer from "@/components/Footer";
 export default function Home() {
   const { isSignedIn, isLoaded } = useUser();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (isSignedIn) {
-      setLoading(true);
-      const timer = setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setLoading(false);
+    if (isLoaded && isSignedIn) {
+      navigate("/dashboard", { replace: true });
     }
-  }, [isSignedIn, navigate]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center w-screen h-screen bg-white dark:bg-gray-400">
-        <Loader isLoaded={loading} />
-      </div>
-    );
-  }
+  }, [isLoaded, isSignedIn, navigate]);
 
   if (!isLoaded) {
     return (
-      <div className="relative h-screen w-full flex justify-center items-center overflow-hidden">
+      <div className="relative flex min-h-screen min-h-[100dvh] w-full items-center justify-center overflow-x-hidden overflow-y-auto">
         <BackgroundImage />
         <MainContent />
       </div>
     );
   }
 
-  if (isSignedIn) return null;
+  if (isSignedIn) return <Loader isLoaded={false} />;
 
   return (
-    <div className="relative h-screen w-full flex flex-col overflow-hidden">
+    <div className="relative flex min-h-screen min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto">
       <BackgroundImage />
-      <div className="relative z-10 flex flex-col items-center justify-center flex-grow px-4">
+      <div className="relative z-10 flex flex-grow flex-col items-center justify-center px-4 py-8 sm:py-10">
         <MainContent />
       </div>
       <div className="relative z-10">
@@ -60,17 +45,16 @@ function BackgroundImage() {
 
 function MainContent() {
   return (
-    <div className="w-full sm:w-[90%] md:w-[70%] lg:w-[50%] xl:w-[40%] flex flex-col items-center rounded-4xl shadow-2xl p-6 md:p-8 border-2 border-[hsl(204,18%,80%)] bg-gradient-to-b from-[#F8F2EF] to-[#D3DADC] dark:from-[#1F1F1F] dark:to-[#2A2A2A]">
-      {/* <h1 className="font-playwrite text-4xl sm:text-5xl md:text-6xl text-[#94461C] dark:text-white pt-6 sm:pt-8 pb-6 sm:pb-10 text-center"> */}
-      <h1 className="font-playwrite text-4xl sm:text-5xl md:text-6xl text-orange-500 dark:text-white pt-6 sm:pt-8 pb-6 sm:pb-10 text-center">
+    <div className="flex w-full max-w-lg flex-col items-center rounded-3xl border border-[#D8E3E6] bg-white/95 p-5 shadow-xl backdrop-blur-sm sm:p-6">
+      <h1 className="font-playwrite pb-4 pt-1 text-center text-2xl text-[#455763] sm:pb-6 sm:pt-2 sm:text-3xl md:text-4xl">
         Moodiary
       </h1>
-      <p className="font-dosis leading-relaxed text-base sm:text-lg text-center px-2 sm:px-4 text-[#000000] dark:text-[#CCCCCC]">
+      <p className="px-2 text-center font-dosis text-xs leading-relaxed text-[#3F4B52] sm:px-3 sm:text-sm">
         Registra cómo te sientes en cualquier momento del día.<br />
         Tu bienestar emocional importa, y aquí tienes un espacio seguro para expresarlo.
       </p>
       <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-        <button className="bg-[hsl(83,12%,45%)] dark:bg-[#ffffff] dark:text-[#292933] font-dosis w-[80%] sm:w-[70%] h-[2.8rem] sm:h-[3rem] flex justify-center items-center text-white text-xl sm:text-2xl px-4 py-2 mt-10 sm:mt-12 mb-2 rounded-2xl transform transition hover:scale-110 duration-200 cursor-pointer">
+        <button type="button" className="mt-6 mb-1 flex h-10 w-full max-w-[14rem] items-center justify-center rounded-lg bg-[#455763] px-4 py-2 font-dosis text-base text-white transition duration-200 hover:bg-[#374852] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAB7BC] focus-visible:ring-offset-2 sm:mt-8 sm:text-lg">
           Iniciar Sesión
         </button>
       </SignInButton>

@@ -14,11 +14,20 @@ const UserDailyQuoteSchema = {
   },
   quote_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
   },
   quote_date: {
     type: DataTypes.DATEONLY,
     defaultValue: DataTypes.NOW,
+  },
+  message: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  source: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'database',
   },
 };
 

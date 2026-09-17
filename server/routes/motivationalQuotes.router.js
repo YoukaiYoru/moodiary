@@ -20,9 +20,11 @@ router.get('/', async (req, res, next) => {
 router.get('/today', requireAuth(), async (req, res) => {
   try {
     const { userId } = getAuth(req);
+    const timezone = req.query.timezone || 'UTC';
     const result = await service.getMotivationalQuoteForToday(
       userId,
       moodEntryService,
+      timezone,
     );
     res.json(result);
   } catch (err) {
@@ -34,7 +36,7 @@ router.get('/today', requireAuth(), async (req, res) => {
 });
 
 // Route to create a new motivational quote
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth(), async (req, res, next) => {
   try {
     const data = req.body;
     const newQuote = await service.create(data);
@@ -45,7 +47,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // Route to edit a motivational quote
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireAuth(), async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -57,7 +59,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // Route to delete a motivational quote
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireAuth(), async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await service.delete(id);

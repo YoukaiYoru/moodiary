@@ -1,13 +1,15 @@
 const express = require('express');
 const MoodEntryTagService = require('../services/moodEntryTag.service');
+const { requireAuth, getAuth } = require('@clerk/express');
 
 const router = express.Router();
 const service = new MoodEntryTagService();
 
 // Route to list all mood entry tags
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth(), async (req, res, next) => {
   try {
-    const moodEntryTags = await service.find();
+    const { userId } = getAuth(req);
+    const moodEntryTags = await service.findForUser(userId);
     res.json(moodEntryTags);
   } catch (error) {
     next(error);
@@ -15,10 +17,11 @@ router.get('/', async (req, res, next) => {
 });
 
 // Route to create a new mood entry tag
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth(), async (req, res, next) => {
   try {
+    const { userId } = getAuth(req);
     const data = req.body;
-    const newMoodEntryTag = await service.create(data);
+    const newMoodEntryTag = await service.create(data, userId);
     res.status(201).json(newMoodEntryTag);
   } catch (error) {
     next(error);
@@ -26,11 +29,12 @@ router.post('/', async (req, res, next) => {
 });
 
 // Route to edit a mood entry tag
-router.put('/:id', async (req, res, next) => {
+router.put('/:entryId/:tagId', requireAuth(), async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { userId } = getAuth(req);
+    const { entryId, tagId } = req.params;
     const data = req.body;
-    const updatedMoodEntryTag = await service.update(id, data);
+    const updatedMoodEntryTag = await service.update({ entryId, tagId }, data, userId);
     res.json(updatedMoodEntryTag);
   } catch (error) {
     next(error);
@@ -38,10 +42,11 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // Route to delete a mood entry tag
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:entryId/:tagId', requireAuth(), async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const result = await service.delete(id);
+    const { userId } = getAuth(req);
+    const { entryId, tagId } = req.params;
+    const result = await service.delete({ entryId, tagId }, userId);
     res.json(result);
   } catch (error) {
     next(error);

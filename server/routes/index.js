@@ -8,7 +8,7 @@ const moodTypesRouter = require('./moodTypes.router');
 const motivationalQuotesRouter = require('./motivationalQuotes.router');
 const tagsRouter = require('./tags.router');
 const userDailyQuotesRouter = require('./userDailyQuotes.router');
-const webhookRouter = require('./webHook.router');
+const { ensureUserProfile } = require('../middlewares/auth.handler');
 
 function routerApi(app) {
   const router = express.Router();
@@ -18,12 +18,11 @@ function routerApi(app) {
   router.use('/moodTypes', moodTypesRouter); // No protegida
   router.use('/motivationalQuotes', motivationalQuotesRouter); // No protegida
   router.use('/tags', tagsRouter); // No protegida
-  router.use('/webhook', webhookRouter); // No protegida
   // Rutas protegidas (requieren autenticación)
-  router.use('/moods', requireAuth(), moodEntriesRouter); // Protegida
-  router.use('/profile', requireAuth(), userProfileRouter); // Protegida
-  router.use('/moodEntryTags', requireAuth(), moodEntryTagsRouter); // Protegida
-  router.use('/userDailyQuotes', requireAuth(), userDailyQuotesRouter); // Protegida
+  router.use('/moods', requireAuth(), ensureUserProfile, moodEntriesRouter); // Protegida
+  router.use('/profile', requireAuth(), ensureUserProfile, userProfileRouter); // Protegida
+  router.use('/moodEntryTags', requireAuth(), ensureUserProfile, moodEntryTagsRouter); // Protegida
+  router.use('/userDailyQuotes', requireAuth(), ensureUserProfile, userDailyQuotesRouter); // Protegida
   // Aquí puedes agregar más rutas
 }
 

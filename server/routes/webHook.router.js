@@ -68,7 +68,6 @@ router.post('/', express.raw({ type: '*/*' }), async (req, res) => {
     res.status(200).send('✅ Webhook procesado');
   } catch (err) {
     console.error('❌ Error verificando webhook:', err);
-    console.error(process.env.CLERK_WEBHOOK_SIGNING_SECRET);
     res.status(400).send('❌ Webhook no verificado');
   }
 });

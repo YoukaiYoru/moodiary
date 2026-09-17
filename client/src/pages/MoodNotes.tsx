@@ -23,6 +23,7 @@ export default function MoodNotes() {
   useEffect(() => {
     if (!dateParam) return;
     let isActive = true;
+    const controller = new AbortController();
     const fetchNotesByDate = async () => {
       setLoading(true);
       setError(null);
@@ -33,6 +34,7 @@ export default function MoodNotes() {
         const response = await api.get(`moods/entries/${dateParam}`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { timeZone: timezone },
+          signal: controller.signal,
         });
         if (!isActive) return;
         const apiNotes: { timestamp: string; emotion: string; text: string }[] =
@@ -49,8 +51,10 @@ export default function MoodNotes() {
         }));
         setNotes(adapted);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (isActive) setError(msg || "Error fetching notes");
+        if (isActive && !controller.signal.aborted) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setError(msg || "Error fetching notes");
+        }
       } finally {
         if (isActive) setLoading(false);
       }
@@ -58,24 +62,29 @@ export default function MoodNotes() {
     fetchNotesByDate();
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, [dateParam, getToken]);
 
   return (
     <>
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        <h1 className="text-xl md:text-3xl font-bold text-gray-900 text-center">
+      <div className="mx-auto w-full max-w-4xl space-y-2 px-1 py-3 sm:py-5">
+        <h1 className="text-center text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
           Notas de estado de ánimo
         </h1>
-        <p className="text-center text-sm md:text-base">
+        <p className="text-center text-xs text-slate-600 sm:text-sm">
           Tus emociones de la fecha: <b>{dateParam}</b>
         </p>
       </div>
 
-      <div className="grid grid-cols-1 place-items-center gap-4 p-4 text-sm md:text-base">
-        {error && <p className="text-red-600">{error}</p>}
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-1 place-items-center gap-3 px-1 pb-8 text-xs sm:gap-4 sm:text-sm">
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-red-700" role="alert">
+            No pudimos cargar tus notas. Intenta nuevamente.
+          </p>
+        )}
         {loading ? (
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" role="status" aria-label="Cargando notas" />
         ) : notes.length > 0 ? (
           notes.map((note, idx) => <Notes key={idx} {...note} />)
         ) : (

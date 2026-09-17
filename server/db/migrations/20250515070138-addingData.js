@@ -14,9 +14,9 @@ module.exports = {
       [
         { name: 'Alegría', mood_score: 5, emoji: '😄' },
         { name: 'Calma', mood_score: 4, emoji: '😌' },
-        { name: 'Ansiedad', mood_score: 2, emoji: '😰' },
+        { name: 'Ansiedad', mood_score: 3, emoji: '😰' },
         { name: 'Tristeza', mood_score: 1, emoji: '😢' },
-        { name: 'Enojo', mood_score: 1, emoji: '😠' },
+        { name: 'Enojo', mood_score: 2, emoji: '😠' },
       ],
       {},
     );
@@ -31,9 +31,7 @@ module.exports = {
      */
     await queryInterface.bulkDelete(
       'mood_types',
-      {
-        name: ['alegria', 'calma', 'ansiedad', 'tristeza', 'enojo'],
-      },
+      { name: ['Alegría', 'Calma', 'Ansiedad', 'Tristeza', 'Enojo'] },
       {},
     );
   },

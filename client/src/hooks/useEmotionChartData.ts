@@ -16,62 +16,81 @@ const chartConfig = {
   Tristeza: { label: "Tristeza", color: "var(--chart-4)" },
   Enojo: { label: "Enojo", color: "var(--chart-5)" },
 };
+const emotionKeys = Object.keys(chartConfig) as Array<keyof typeof chartConfig>;
 
 export function useEmotionChartData() {
   const { getToken } = useAuth();
   const [timeRange, setTimeRange] = useState("1d");
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const timezoneStr = useMemo(() => dayjs.tz.guess(), []);
-  const emotionKeys = Object.keys(chartConfig) as Array<
-    keyof typeof chartConfig
-  >;
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isActive = true;
+    const controller = new AbortController();
+
     async function fetchData() {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
+      try {
+        const token = await getToken();
+        if (!token || !isActive) return;
 
-      const referenceDate = dayjs().tz(timezoneStr).format("YYYY-MM-DD");
-      const response = await api.get("/moods/chart", {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          range: timeRange,
-          date: referenceDate,
-          timezone: timezoneStr,
-        },
-      });
-
-      const rawData = response.data;
-      const groupedData: Record<string, ChartDataPoint> = {};
-
-      rawData.forEach((entry: ChartDataPoint) => {
-        const dateKey = dayjs(entry.date)
-          .tz(timezoneStr)
-          .format(timeRange === "1d" ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD");
-
-        if (!groupedData[dateKey]) {
-          groupedData[dateKey] = { date: dateKey };
-          emotionKeys.forEach((emo) => (groupedData[dateKey][emo] = 0));
-        }
-
-        emotionKeys.forEach((emo) => {
-          if (entry[emo] !== undefined) {
-            groupedData[dateKey][emo] =
-              Number(groupedData[dateKey][emo] ?? 0) + Number(entry[emo] ?? 0);
-          }
+        const referenceDate = dayjs().tz(timezoneStr).format("YYYY-MM-DD");
+        const response = await api.get("/moods/chart", {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            range: timeRange,
+            date: referenceDate,
+            timezone: timezoneStr,
+          },
+          signal: controller.signal,
         });
-      });
 
-      const processed = Object.values(groupedData).sort((a, b) =>
-        dayjs(a.date).isAfter(dayjs(b.date)) ? 1 : -1
-      );
-      setChartData(processed);
-      setIsLoading(false);
+        const groupedData: Record<string, ChartDataPoint> = {};
+        (Array.isArray(response.data) ? response.data : []).forEach(
+          (entry: ChartDataPoint) => {
+            const dateKey = dayjs(entry.date)
+              .tz(timezoneStr)
+              .format(timeRange === "1d" ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD");
+
+            if (!groupedData[dateKey]) {
+              groupedData[dateKey] = { date: dateKey };
+              emotionKeys.forEach((emo) => (groupedData[dateKey][emo] = 0));
+            }
+
+            emotionKeys.forEach((emo) => {
+              if (entry[emo] !== undefined) {
+                groupedData[dateKey][emo] =
+                  Number(groupedData[dateKey][emo] ?? 0) +
+                  Number(entry[emo] ?? 0);
+              }
+            });
+          },
+        );
+
+        if (isActive) {
+          const processed = Object.values(groupedData).sort((a, b) =>
+            dayjs(a.date).isAfter(dayjs(b.date)) ? 1 : -1,
+          );
+          setChartData(processed);
+        }
+      } catch (error) {
+        if (isActive) {
+          if (!controller.signal.aborted) {
+            console.error("Error loading chart data:", error);
+          }
+          setChartData([]);
+        }
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
     }
 
     fetchData();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, [timeRange, timezoneStr, getToken]);
 
   return {

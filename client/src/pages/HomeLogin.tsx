@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useRef } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -17,7 +17,7 @@ import {
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
-import Emoji from "react-emojis";
+import Emoji from "@/components/Emoji";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -28,6 +28,7 @@ export default function HomeLogin() {
   const [text, setText] = useState("");
   const [bounceEmoji, setBounceEmoji] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const soundRef = useRef<HTMLAudioElement | null>(null);
 
   const context = useContext(NoteUpdateContext);
   if (!context)
@@ -45,8 +46,9 @@ export default function HomeLogin() {
   const handleEmojiClick = (id: string) => {
     setSelectedEmoji(id);
     setBounceEmoji(id);
-    const audio = new Audio(`/sounds/emoji.mp3`);
-    audio.play();
+    soundRef.current ??= new Audio("/sounds/emoji.mp3");
+    soundRef.current.currentTime = 0;
+    void soundRef.current.play().catch(() => undefined);
     setTimeout(() => setBounceEmoji(null), 2500);
   };
 
@@ -54,7 +56,6 @@ export default function HomeLogin() {
   const max_length = 500;
   const total_chars = text.length;
   const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
-  const remaining = max_length - total_chars;
 
   const wordCounter = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
@@ -142,27 +143,28 @@ export default function HomeLogin() {
 
   return (
     <>
-      <h1 className="text-2xl font-light text-center lg:text-left mt-4">
+      <h1 className="mt-2 text-center text-xl font-medium tracking-tight text-slate-800 sm:text-2xl lg:text-left">
         Bienvenido al Dashboard
       </h1>
 
-      <div className="flex justify-center items-center min-h-[80vh] px-4">
-        <section className="w-full max-w-3xl flex flex-col justify-center items-center">
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4 pb-6">
-            <h1 className="font-dosis font-light text-3xl sm:text-4xl md:text-5xl text-center">
+      <div className="flex min-h-[calc(100svh-8rem)] items-start justify-center px-1 py-8 sm:px-4 sm:py-12">
+        <section className="flex w-full max-w-3xl flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center gap-2 pb-5 sm:flex-row sm:gap-4 sm:pb-7">
+            <h1 className="text-center font-dosis text-[clamp(1.3rem,3.5vw,2.25rem)] font-light leading-tight">
               ¿Cómo te sientes hoy?
             </h1>
-            <Emoji emoji="hugging-face" size={50} />
+            <Emoji emoji="hugging-face" size={34} />
           </div>
           <TooltipProvider>
-            <div className="flex lg:justify-center items-center gap-4 overflow-x-auto w-full px-2 sm:px-0 py-2 scroll-smooth">
+            <div className="flex w-full items-center justify-center gap-1 overflow-x-auto px-1 py-2 scroll-smooth sm:gap-3 sm:px-0">
               {emotions.map(({ key, emoji }) => (
                 <Tooltip key={key}>
                   <TooltipTrigger asChild>
                     <button
-                      className={`emoji-button transition-transform duration-200 ${selectedEmoji === key ? "scale-150" : ""} ${bounceEmoji === key ? "animate-bounce" : ""}`}
+                      className={`emoji-button transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAB7BC] ${selectedEmoji === key ? "scale-125 rounded-full bg-[#EAF7FA] ring-2 ring-[#AAB7BC]" : ""} ${bounceEmoji === key ? "emotion-pop" : ""}`}
                       onClick={() => handleEmojiClick(key)}
                       aria-label={key}
+                      aria-pressed={selectedEmoji === key}
                       type="button"
                     >
                       <Emoji emoji={emoji} />
@@ -175,9 +177,9 @@ export default function HomeLogin() {
               ))}
             </div>
           </TooltipProvider>
-          <div className="relative w-full sm:w-[60vw] mt-6">
+          <div className="relative mt-5 w-full sm:mt-7 sm:w-[min(60vw,42rem)]">
             <Textarea
-              className="min-h-[50px] w-full pr-14 rounded-2xl border-none text-base sm:text-lg md:text-xl placeholder:text-base md:placeholder:text-xl shadow-lg resize-none overflow-hidden bg-white dark:bg-[#1F1F1F] dark:text-white"
+              className="min-h-[46px] w-full resize-none overflow-hidden rounded-xl border-none bg-white pr-16 text-base leading-6 shadow-lg placeholder:text-sm sm:text-sm sm:placeholder:text-sm dark:bg-[#1F1F1F] dark:text-white"
               placeholder="Escribe cómo te sientes hoy... Ej: Me siento agradecido y con energía"
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -193,8 +195,10 @@ export default function HomeLogin() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 bg-[#455763] hover:bg-[#455763]/90 rounded-xl px-4 py-4 text-sm"
+                    className="absolute right-2 top-1/2 size-9 -translate-y-1/2 rounded-lg bg-[#455763] p-0 text-sm hover:bg-[#455763]/90"
                     onClick={handleSubmit}
+                    disabled={submitting}
+                    aria-label={submitting ? "Enviando estado de ánimo" : "Enviar estado de ánimo"}
                     type="button"
                   >
                     <TiLocationArrowOutline />
@@ -206,15 +210,15 @@ export default function HomeLogin() {
           </div>
           {/* Contadores */}
           <div className="flex justify-end items-center w-full mt-4 text-sm font-dosis px-2">
-            <p>Palabras: {words}&nbsp;</p>
+            <p aria-live="polite">Palabras: {words}&nbsp;</p>
             <p>
-              &nbsp;Caracteres: {total_chars}/{remaining}
+              &nbsp;Caracteres: {total_chars}/{max_length}
             </p>
           </div>
 
           <Button
             variant="outline"
-            className="mt-4 shadow-amber-100 cursor-pointer border-blue-400 text-blue-950 hover:text-blue-950 hover:bg-[#8b6f31]/10 hover:shadow hover:scale-105 transition-transform"
+            className="mt-4 cursor-pointer border-[#AAB7BC] text-[#455763] shadow-slate-100 transition-transform hover:scale-105 hover:bg-slate-100 hover:text-[#374852] hover:shadow"
             onClick={handleConfetti}
             type="button"
           >

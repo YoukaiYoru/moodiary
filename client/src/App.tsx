@@ -1,11 +1,14 @@
 // App.tsx
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
 import Layout from "./home/Layout";
 import Home from "./pages/Home";
-import HomeLogin from "./pages/HomeLogin";
-import Statistics from "./pages/Statistics";
-import MoodNotes from "./pages/MoodNotes";
+import Loader from "./components/Loader";
+
+const HomeLogin = lazy(() => import("./pages/HomeLogin"));
+const Statistics = lazy(() => import("./pages/Statistics"));
+const MoodNotes = lazy(() => import("./pages/MoodNotes"));
 
 function App() {
   return (
@@ -22,9 +25,30 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<HomeLogin />} />
-        <Route path="stats" element={<Statistics />} />
-        <Route path="notes/:id" element={<MoodNotes />} />
+        <Route
+          index
+          element={
+            <Suspense fallback={<Loader isLoaded={false} />}>
+              <HomeLogin />
+            </Suspense>
+          }
+        />
+        <Route
+          path="stats"
+          element={
+            <Suspense fallback={<Loader isLoaded={false} />}>
+              <Statistics />
+            </Suspense>
+          }
+        />
+        <Route
+          path="notes/:id"
+          element={
+            <Suspense fallback={<Loader isLoaded={false} />}>
+              <MoodNotes />
+            </Suspense>
+          }
+        />
       </Route>
     </Routes>
   );

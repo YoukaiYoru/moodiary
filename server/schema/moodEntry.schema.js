@@ -1,9 +1,8 @@
 const joi = require('joi');
 
-const id = joi.string().uuid();
-const mood = joi.string().valid('happy', 'sad', 'angry', 'neutral');
+const id = joi.number().integer().positive();
+const mood = joi.string().valid('Alegría', 'Calma', 'Ansiedad', 'Tristeza', 'Enojo');
 const date = joi.date().iso();
-const userId = joi.string().pattern(/^user_[a-zA-Z0-9]+$/);
 const note = joi.string().max(500);
 
 const createMoodEntrySchema = joi.object({
@@ -17,10 +16,8 @@ const getOneMoodEntrySchema = joi.object({
 });
 
 const getMoodEntrySchema = joi
-  .object({
-    userId: userId.required(),
-  })
-  .or('userId');
+  .object()
+  .unknown(false);
 
 module.exports = {
   createMoodEntrySchema,

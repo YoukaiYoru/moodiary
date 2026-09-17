@@ -8,8 +8,13 @@ export default function Layout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarTrigger className="mt-4" />
-      <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 flex flex-col gap-4 max-w-6xl w-full mx-auto my-4">
+      <div className="sticky top-0 z-20 -mb-1 flex h-9 shrink-0 items-center px-0 sm:px-2">
+        <SidebarTrigger
+          className="-ml-0.5 size-8"
+          aria-label="Abrir menú de navegación"
+        />
+      </div>
+      <main className="min-w-0 flex-1 overflow-y-auto px-2 py-2 sm:px-4 sm:py-3 lg:px-6">
         <Outlet />
       </main>
       <Toaster />

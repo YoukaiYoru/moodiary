@@ -1,7 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&family=Playwrite+DK+Loopet:wght@100..400&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Delius&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lobster&display=swap");
-
+@import "../../design-system-moodiary/design-system.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -33,33 +30,44 @@
 @custom-variant dark (&:is(.dark *));
 
 .emoji-button {
-  @apply text-5xl m-4 hover:text-shadow-lg border-none rounded-[50%] transform transition hover:scale-130 duration-200 text-shadow-lg cursor-pointer;
+  @apply m-1 cursor-pointer rounded-full border-none p-1 text-2xl text-shadow-lg transition duration-200 hover:scale-105 hover:text-shadow-lg sm:m-1 sm:p-1.5 sm:text-3xl;
+}
+
+@keyframes emotion-pop {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.2) rotate(-4deg); }
+  100% { transform: scale(1); }
+}
+
+.emotion-pop {
+  animation: emotion-pop 420ms ease-out;
 }
 
 body {
-  background: #bfe6f0;
+  background: var(--moodiary-background);
+  color: var(--moodiary-text);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: var(--moodiary-background);
+  --foreground: var(--moodiary-text);
+  --card: var(--moodiary-surface);
+  --card-foreground: var(--moodiary-text);
+  --popover: var(--moodiary-surface);
+  --popover-foreground: var(--moodiary-text);
+  --primary: var(--moodiary-primary);
+  --primary-foreground: var(--moodiary-text-on-primary);
+  --secondary: var(--moodiary-secondary);
+  --secondary-foreground: var(--moodiary-text);
+  --muted: var(--moodiary-secondary);
+  --muted-foreground: var(--moodiary-text-muted);
+  --accent: var(--moodiary-accent);
+  --accent-foreground: var(--moodiary-text);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: var(--moodiary-border);
+  --input: var(--moodiary-border);
+  --ring: var(--moodiary-accent);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);

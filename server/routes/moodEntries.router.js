@@ -32,12 +32,12 @@ router.get('/average/today', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const { date, timezone = 'UTC' } = req.query;
-    const { average, emoji, name } = await service.getAverageMoodToday(
+    const { average, emoji, name, count } = await service.getAverageMoodToday(
       userId,
       date,
       timezone,
     );
-    res.json({ average, emoji, name });
+    res.json({ average, emoji, name, count });
   } catch (error) {
     next(error);
   }
@@ -123,7 +123,7 @@ router.get(
 router.get('/dates', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const dates = await service.findDistinctDates(userId);
+    const dates = await service.findDistinctDates(userId, req.query.timezone);
     res.json(dates);
   } catch (error) {
     next(error);
@@ -169,21 +169,32 @@ router.get('/entries/:isoDate', requireAuth(), async (req, res, next) => {
   }
 });
 
-router.put('/:entryId', requireAuth(), async (req, res, next) => {
-  try {
-    const { entryId } = req.params;
-    const updatedEntry = await service.update(parseInt(entryId), req.body);
-    res.json(updatedEntry);
-  } catch (error) {
-    next(error);
-  }
-});
+router.put(
+  '/:entryId',
+  requireAuth(),
+  validatorHandler(createMoodEntrySchema),
+  async (req, res, next) => {
+    try {
+      const { entryId } = req.params;
+      const { userId } = getAuth(req);
+      const updatedEntry = await service.updateByUserId(
+        userId,
+        parseInt(entryId, 10),
+        req.body,
+      );
+      res.json(updatedEntry);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Eliminar entrada específica
 router.delete('/:entryId', requireAuth(), async (req, res, next) => {
   try {
     const { entryId } = req.params;
-    const result = await service.delete(parseInt(entryId));
+    const { userId } = getAuth(req);
+    const result = await service.deleteByUserId(userId, parseInt(entryId, 10));
     res.json(result);
   } catch (error) {
     next(error);

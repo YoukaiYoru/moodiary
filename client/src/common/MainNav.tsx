@@ -33,26 +33,25 @@ const NavBarMenu = [
 const MainNav = () => {
   return (
     <div
-      className="bg-indigo-500 text-white py-8"
-      style={{ backgroundColor: "#E6AB5C" }}
+      className="border-b border-[#D8E3E6] bg-white py-2.5 text-[#3F4B52]"
     >
-      <div className="container flex justify-items-start items-center">
+      <div className="container flex items-center justify-items-start">
         {/* logo section */}
         <div>
-          <a href="">
+          <a href="" className="inline-flex items-center">
             {" "}
             {/* Expected link */}
-            <h1 className="text-3xl font-bold px-10 title">Moodiary</h1>
+            <h1 className="px-4 text-xl font-bold title">Moodiary</h1>
           </a>
         </div>
         {/* menu section */}
         <div className="hidden md:block">
-          <ul className="flex justify-center items-center gap-4 relative z-40">
+          <ul className="relative z-40 flex items-center justify-center gap-2">
             {NavBarMenu.map((item) => (
               <li key={item.id}>
                 <a
                   href={item.link}
-                  className="inline-block text-base font-semibold py-2 px-3 uppercase"
+                  className="inline-block px-2 py-1.5 text-xs font-semibold uppercase"
                 >
                   {item.title}
                 </a>
@@ -69,9 +68,6 @@ const MainNav = () => {
             <SignedIn>
               <UserButton />
             </SignedIn>
-            <h1 className="text-3xl font-bold px-10 font-playwrite">
-              Hello world
-            </h1>
           </ul>
         </div>
       </div>

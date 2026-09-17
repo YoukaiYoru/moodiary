@@ -108,9 +108,9 @@ class MoodEntryService {
     }
   }
 
-  async update(id, data) {
+  async updateByUserId(userId, id, data) {
     try {
-      const moodEntry = await this.findOne(id);
+      const moodEntry = await this.findOneByUserId(userId, id);
       await moodEntry.update(data);
       return moodEntry;
     } catch (error) {
@@ -118,14 +118,34 @@ class MoodEntryService {
     }
   }
 
-  async delete(id) {
+  async deleteByUserId(userId, id) {
     try {
-      const moodEntry = await this.findOne(id);
+      const moodEntry = await this.findOneByUserId(userId, id);
       await moodEntry.destroy();
       return { message: 'Mood entry deleted successfully' };
     } catch (error) {
       throw Boom.badImplementation('Error deleting mood entry', error);
     }
+  }
+
+  async getAverageMoodGroupedByDateLocal(userId, timezone = 'UTC') {
+    const entries = await models.MoodEntry.findAll({
+      where: { user_id: userId },
+      include: { model: models.MoodType, as: 'moodType', attributes: ['mood_score'] },
+      order: [['created_at', 'ASC']],
+    });
+    const grouped = new Map();
+    for (const entry of entries) {
+      const date = dayjs(entry.created_at).tz(timezone).format('YYYY-MM-DD');
+      const current = grouped.get(date) || { sum: 0, count: 0 };
+      current.sum += entry.moodType.mood_score;
+      current.count += 1;
+      grouped.set(date, current);
+    }
+    return [...grouped.entries()].map(([date, value]) => {
+      const average = Number((value.sum / value.count).toFixed(2));
+      return { date, average, emoji: getEmojiFromAverage(average), name: getNameFromAverage(average) };
+    });
   }
   //Custom services
 
@@ -152,7 +172,7 @@ class MoodEntryService {
     });
 
     if (entries.length === 0) {
-      return { average: 0, emoji: '😐', name: 'No hay emociones' };
+      return { average: 0, emoji: '😐', name: 'No hay emociones', count: 0 };
     }
 
     const sum = entries.reduce(
@@ -165,60 +185,72 @@ class MoodEntryService {
       average: parseFloat(average.toFixed(2)),
       emoji: getEmojiFromAverage(average),
       name: getNameFromAverage(average),
+      count: entries.length,
     };
   }
   async getAverageMoodByMonth(userId, year, month, timezone = 'UTC') {
-    // month: 1 = enero, 12 = diciembre
-    const results = [];
-
-    // Crear dayjs para el primer día del mes a la zona horaria
+    // month: 1 = enero, 12 = diciembre. Una sola consulta evita el N+1
+    // anterior (una consulta por cada día del mes).
     const firstDay = dayjs
       .tz(`${year}-${String(month).padStart(2, '0')}-01`, timezone)
       .startOf('day');
-    const daysInMonth = firstDay.daysInMonth();
-
-    for (let i = 0; i < daysInMonth; i++) {
-      const date = firstDay.add(i, 'day');
-      const startOfDayUTC = date.startOf('day').utc().toDate();
-      const endOfDayUTC = date.endOf('day').utc().toDate();
-
-      const entries = await models.MoodEntry.findAll({
-        where: {
-          user_id: userId,
-          created_at: { [Op.between]: [startOfDayUTC, endOfDayUTC] },
+    const endOfMonth = firstDay.endOf('month');
+    const entries = await models.MoodEntry.findAll({
+      attributes: ['created_at'],
+      where: {
+        user_id: userId,
+        created_at: {
+          [Op.gte]: firstDay.utc().toDate(),
+          [Op.lt]: endOfMonth.add(1, 'millisecond').utc().toDate(),
         },
-        include: {
-          model: models.MoodType,
-          as: 'moodType',
-          attributes: ['mood_score'],
-        },
-      });
+      },
+      include: {
+        model: models.MoodType,
+        as: 'moodType',
+        attributes: ['mood_score'],
+      },
+      order: [['created_at', 'ASC']],
+    });
 
-      if (entries.length === 0) continue;
+    const grouped = new Map();
+    for (const entry of entries) {
+      const date = dayjs(entry.created_at).tz(timezone).format('YYYY-MM-DD');
+      const current = grouped.get(date) || { sum: 0, count: 0 };
+      current.sum += entry.moodType.mood_score;
+      current.count += 1;
+      grouped.set(date, current);
+    }
 
-      const sum = entries.reduce((acc, e) => acc + e.moodType.mood_score, 0);
-      const average = parseFloat((sum / entries.length).toFixed(2));
-
-      results.push({
-        date: date.format('YYYY-MM-DD'),
+    return [...grouped.entries()].map(([date, value]) => {
+      const average = Number((value.sum / value.count).toFixed(2));
+      return {
+        date,
         average,
         emoji: getEmojiFromAverage(average),
         name: getNameFromAverage(average),
-      });
-    }
-
-    return results;
+      };
+    });
   }
 
-  async findDistinctDates(userId) {
+  async findDistinctDates(userId, timezone = 'UTC') {
+    let safeTimezone = 'UTC';
+    try {
+      Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
+      safeTimezone = timezone;
+    } catch {
+      // Si el cliente envía una zona inválida, UTC mantiene una respuesta válida.
+    }
+    const dateExpression = `DATE("MoodEntry"."created_at" AT TIME ZONE '${safeTimezone.replace(/'/g, "''")}')`;
+
     const results = await models.MoodEntry.findAll({
-      attributes: ['created_at'],
+      attributes: [[literal(dateExpression), 'created_at']],
       where: { user_id: userId },
-      order: [['created_at', 'DESC']],
+      group: [literal(dateExpression)],
+      order: [[literal(dateExpression), 'DESC']],
       raw: true,
     });
 
-    return results; // [{ date: '2025-05-16' }, ...]
+    return results;
   }
 
   async findByDateFormatted(userId, isoDate, timeZone = 'UTC') {
@@ -232,13 +264,16 @@ class MoodEntryService {
     const utcEnd = localMidnight.add(1, 'day').utc().toDate();
 
     const entries = await models.MoodEntry.findAll({
+      attributes: ['created_at', 'note'],
       where: {
         user_id: userId,
-        created_at: {
-          [Op.between]: [utcStart, utcEnd],
-        },
+        created_at: { [Op.gte]: utcStart, [Op.lt]: utcEnd },
       },
-      include: ['moodType'],
+      include: {
+        model: models.MoodType,
+        as: 'moodType',
+        attributes: ['name', 'emoji'],
+      },
       order: [['created_at', 'ASC']],
     });
 
@@ -272,13 +307,18 @@ class MoodEntryService {
     const endUTC = endDate.utc().toDate();
 
     const entries = await models.MoodEntry.findAll({
+      attributes: ['created_at'],
       where: {
         user_id: userId,
         created_at: {
           [Op.between]: [startUTC, endUTC],
         },
       },
-      include: ['moodType'],
+      include: {
+        model: models.MoodType,
+        as: 'moodType',
+        attributes: ['name', 'mood_score'],
+      },
     });
 
     if (range === '1d') {

@@ -17,12 +17,12 @@ class UserProfileService {
 
   // Crear un perfil si no existe
   async createIfNotExists(userId) {
-    let profile = await models.ProfileUser.findOne({
+    let profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });
 
     if (!profile) {
-      profile = await models.ProfileUser.create({ user_id: userId });
+      profile = await models.UserProfile.create({ user_id: userId });
     }
 
     return profile;
@@ -30,7 +30,7 @@ class UserProfileService {
 
   // Actualizar el perfil con campos de negocio (notas, mood, etc.)
   async update(userId, changes) {
-    const profile = await models.ProfileUser.findOne({
+    const profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });
 
@@ -43,7 +43,7 @@ class UserProfileService {
   }
 
   async updateDayMood(userId, mood) {
-    const profile = await models.ProfileUser.findOne({
+    const profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });
 
@@ -57,7 +57,7 @@ class UserProfileService {
 
   // Eliminar perfil (si decides permitirlo)
   async delete(userId) {
-    const profile = await models.ProfileUser.findOne({
+    const profile = await models.UserProfile.findOne({
       where: { user_id: userId },
     });
 

@@ -7,9 +7,11 @@ function logErrors(err, req, res, next) {
 }
 
 function errorHandler(err, req, res, next) {
-  res.status(500).json({
+  if (res.headersSent) return next(err);
+  const statusCode = Number(err.statusCode) || 500;
+  res.status(statusCode).json({
     message: 'Internal Server Error',
-    error: err.message,
+    ...(process.env.NODE_ENV !== 'production' && { error: err.message }),
   });
 }
 function boomErrorHandler(err, req, res, next) {
@@ -25,7 +27,7 @@ function sequelizeErrorHandler(err, req, res, next) {
     return res.status(409).json({
       statusCode: 409,
       message: err.message,
-      errors: err.errors,
+      ...(process.env.NODE_ENV !== 'production' && { errors: err.errors }),
     });
   }
   next(err);

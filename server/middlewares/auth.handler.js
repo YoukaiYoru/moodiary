@@ -1,4 +1,5 @@
 const { getAuth, requireAuth } = require('@clerk/express');
+const { models } = require('../libs/sequelize');
 
 const clerkAuthMiddleware = requireAuth({
   unauthorizedHandler: (req, res) => {
@@ -21,4 +22,28 @@ function redirectIfUnauthenticated(req, res, next) {
   }
 }
 
-module.exports = { clerkAuthMiddleware, redirectIfUnauthenticated };
+async function ensureUserProfile(req, res, next) {
+  try {
+    const { userId } = getAuth(req);
+    if (!userId) return next();
+
+    await models.UserProfile.findOrCreate({
+      where: { user_id: userId },
+      defaults: {
+        user_id: userId,
+        display_name: userId,
+        created_at: new Date(),
+      },
+    });
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  clerkAuthMiddleware,
+  redirectIfUnauthenticated,
+  ensureUserProfile,
+};

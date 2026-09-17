@@ -15,7 +15,7 @@ const MoodEntryTagSchema = {
 
 class MoodEntryTag extends Model {
   static associate() {
-    // No asociaciones directas aquí, las manejan los modelos principales con belongsToMany
+    // La relación pertenece a una entrada; el acceso se valida por user_id en los servicios.
   }
 
   static config(sequelize) {

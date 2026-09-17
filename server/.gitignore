@@ -3,6 +3,8 @@
 
 ### dotenv ###
 .env
+.env.*
+!.env.example
 
 ### Node ###
 # Logs
@@ -134,6 +136,11 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Local Ollama/runtime artifacts
+ollama_data/
+.playwright-cli/
+reports/
+
 ### Node Patch ###
 # Serverless Webpack directories
 .webpack/
@@ -142,5 +149,3 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
-
- 

@@ -20,7 +20,7 @@ router.get('/mood', requireAuth(), async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
     const profile = await service.findByClerkId(userId);
-    res.json({ mood: profile.mood });
+    res.json({ mood: profile.preferred_mood });
   } catch (error) {
     next(error);
   }
@@ -41,7 +41,10 @@ router.post('/', async (req, res, next) => {
 router.patch('/', async (req, res, next) => {
   try {
     const { userId } = getAuth(req);
-    const changes = req.body;
+    const allowed = ['display_name', 'preferred_mood'];
+    const changes = Object.fromEntries(
+      Object.entries(req.body).filter(([key]) => allowed.includes(key)),
+    );
     const updatedProfile = await service.update(userId, changes);
     res.json(updatedProfile);
   } catch (error) {
