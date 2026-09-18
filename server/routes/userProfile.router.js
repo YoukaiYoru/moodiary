@@ -1,6 +1,8 @@
 const express = require('express');
 const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 const ProfileService = require('../services/userProfile.service');
+const { changePassword } = require('../services/auth.service');
+const { config } = require('../config/config');
 
 const router = express.Router();
 const service = new ProfileService();
@@ -41,12 +43,44 @@ router.post('/', async (req, res, next) => {
 router.patch('/', async (req, res, next) => {
   try {
     const userId = req.auth.userId;
-    const allowed = ['display_name', 'preferred_mood'];
+    const allowed = ['display_name', 'preferred_mood', 'avatar_url'];
     const changes = Object.fromEntries(
       Object.entries(req.body).filter(([key]) => allowed.includes(key)),
     );
+    if (typeof changes.display_name === 'string') {
+      changes.display_name = changes.display_name.trim().slice(0, 80);
+    }
+    if (changes.avatar_url !== null && typeof changes.avatar_url !== 'string') {
+      return res.status(400).json({ message: 'La imagen de perfil no es válida.' });
+    }
+    if (typeof changes.avatar_url === 'string') {
+      const validImage = /^data:image\/(jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(changes.avatar_url);
+      if (!validImage || changes.avatar_url.length > 1_400_000) {
+        return res.status(400).json({ message: 'La imagen debe ser JPG, PNG o WebP y pesar menos de 1 MB.' });
+      }
+    }
     const updatedProfile = await service.update(userId, changes);
     res.json(updatedProfile);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/password', async (req, res, next) => {
+  try {
+    const userId = req.auth.userId;
+    const session = await changePassword(userId, req.body?.currentPassword, req.body?.newPassword);
+    const { rawToken, maxAge } = session;
+    res.setHeader('Set-Cookie', `moodiary_session=${encodeURIComponent(rawToken)}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=${config.authCookieSameSite}${config.authCookieSecure ? '; Secure' : ''}`);
+    res.json({ message: 'Contraseña actualizada' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/data', async (req, res, next) => {
+  try {
+    res.json(await service.deleteData(req.auth.userId, req.body?.currentPassword));
   } catch (error) {
     next(error);
   }
@@ -56,7 +90,7 @@ router.patch('/', async (req, res, next) => {
 router.delete('/', async (req, res, next) => {
   try {
     const userId = req.auth.userId;
-    const result = await service.delete(userId);
+    const result = await service.delete(userId, req.body?.currentPassword);
     res.json(result);
   } catch (error) {
     next(error);

@@ -245,6 +245,9 @@ usa Axios con `withCredentials: true`.
 | GET | /moods/chart | Datos del gráfico |
 | GET | /motivationalQuotes/today | Frase del día/IA |
 | GET/PATCH | /profile | Perfil propio |
+| PATCH | /profile/password | Cambiar contraseña y revocar sesiones anteriores |
+| DELETE | /profile/data | Borrar notas y frases personales, conservando la cuenta |
+| DELETE | /profile | Eliminar cuenta y datos asociados |
 | POST | /auth/register | Crear cuenta e iniciar sesión |
 | POST | /auth/login | Iniciar sesión |
 | GET | /auth/me | Consultar sesión actual |
@@ -256,12 +259,14 @@ Los catálogos de emociones, tags y frases son de lectura pública, pero su escr
 
 - CORS y el guard de origen se configuran con FRONTEND_URLS.
 - Se desactiva X-Powered-By y se agregan cabeceras HTTP defensivas.
-- Body JSON limitado a 20 KB.
+- Body JSON limitado a 2 MB para permitir fotos de perfil pequeñas.
 - Rate limiting básico por IP con respuesta 429.
 - Errores CORS responden 403.
 - En producción no se imprime el objeto completo de error con SQL y parámetros.
 - Rutas globales de escritura requieren administrador.
 - Consultas de entradas se filtran por user_id.
+- Las fotos de perfil aceptan solo JPG, PNG o WebP de máximo 1 MB y se guardan en PostgreSQL.
+- Las acciones de borrado y cambio de contraseña requieren la contraseña actual.
 - Ollama no se expone fuera de Docker.
 - Migraciones se ejecutan antes del backend.
 - Supabase utiliza SSL.

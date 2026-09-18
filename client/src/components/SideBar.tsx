@@ -35,6 +35,7 @@ import {
   Notebook,
   ChevronDown,
   Search,
+  Settings,
 } from "lucide-react";
 
 dayjs.extend(timezone);
@@ -148,6 +149,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   >
                     <BarChart2 className="mr-2 h-4 w-4" />
                     Estadísticas
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem key="Perfil">
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/dashboard/profile"
+                    className={({ isActive }) => cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Perfil y ajustes
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

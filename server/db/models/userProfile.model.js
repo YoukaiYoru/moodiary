@@ -18,6 +18,10 @@ const UserProfileSchema = {
     allowNull: true,
     type: DataTypes.TEXT,
   },
+  avatar_url: {
+    allowNull: true,
+    type: DataTypes.TEXT,
+  },
   display_name: {
     type: DataTypes.TEXT,
   },

@@ -29,6 +29,7 @@ function publicUser(user) {
     id: user.user_id,
     email: user.email,
     displayName: user.display_name || user.email.split('@')[0],
+    avatarUrl: user.avatar_url || null,
   };
 }
 
@@ -87,4 +88,28 @@ async function revokeSession(rawToken) {
   await models.AuthSession.destroy({ where: { id: tokenHash } });
 }
 
-module.exports = { register, login, createSession, getUserFromSession, revokeSession, publicUser, SESSION_TTL_MS };
+async function changePassword(userId, currentPassword, newPassword) {
+  if (typeof newPassword !== 'string' || newPassword.length < 10 || newPassword.length > 128) {
+    throw boom.badRequest('La nueva contraseña debe tener entre 10 y 128 caracteres.');
+  }
+  const user = await models.UserProfile.findByPk(userId);
+  if (!user || !(await verifyPassword(currentPassword, user.password_hash))) {
+    throw boom.unauthorized('La contraseña actual no es correcta.');
+  }
+  await user.update({ password_hash: await hashPassword(newPassword) });
+  await models.AuthSession.destroy({ where: { user_id: userId } });
+  return createSession(userId);
+}
+
+module.exports = {
+  register,
+  login,
+  createSession,
+  getUserFromSession,
+  revokeSession,
+  publicUser,
+  hashPassword,
+  verifyPassword,
+  changePassword,
+  SESSION_TTL_MS,
+};
