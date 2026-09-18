@@ -1,5 +1,6 @@
 const boom = require('@hapi/boom');
-const { models } = require('../libs/sequelize');
+const sequelize = require('../libs/sequelize');
+const { models } = sequelize;
 const { verifyPassword } = require('./auth.service');
 
 function publicProfile(profile) {
@@ -61,30 +62,19 @@ class UserProfileService {
     return publicProfile(profile);
   }
 
-  async updateAccount(userId, changes, currentPassword) {
-    const profile = await models.UserProfile.findByPk(userId);
-    if (!profile) throw boom.notFound('Perfil no encontrado');
-    if (!(await verifyPassword(currentPassword, profile.password_hash))) {
-      throw boom.unauthorized('La contraseña actual no es correcta.');
-    }
-    if (changes.email && changes.email !== profile.email) {
-      const existing = await models.UserProfile.findOne({ where: { email: changes.email } });
-      if (existing) throw boom.conflict('Ya existe una cuenta con ese correo.');
-    }
-    await profile.update(changes);
-    return publicProfile(profile);
-  }
-
   async deleteData(userId, currentPassword) {
     const profile = await models.UserProfile.findByPk(userId);
     if (!profile || !(await verifyPassword(currentPassword, profile.password_hash))) {
       throw boom.unauthorized('La contraseña actual no es correcta.');
     }
-    const [moods, quotes] = await Promise.all([
-      models.MoodEntry.destroy({ where: { user_id: userId } }),
-      models.UserDailyQuote.destroy({ where: { user_id: userId } }),
-    ]);
-    return { moodEntriesDeleted: moods, dailyQuotesDeleted: quotes };
+    const result = await sequelize.transaction(async (transaction) => {
+      const [moods, quotes] = await Promise.all([
+        models.MoodEntry.destroy({ where: { user_id: userId }, transaction }),
+        models.UserDailyQuote.destroy({ where: { user_id: userId }, transaction }),
+      ]);
+      return { moods, quotes };
+    });
+    return { moodEntriesDeleted: result.moods, dailyQuotesDeleted: result.quotes };
   }
 
   async delete(userId, currentPassword) {

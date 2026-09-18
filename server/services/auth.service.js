@@ -25,10 +25,11 @@ async function verifyPassword(password, storedHash) {
 }
 
 function publicUser(user) {
+  const email = user.email || '';
   return {
     id: user.user_id,
-    email: user.email,
-    displayName: user.display_name || user.email.split('@')[0],
+    email,
+    displayName: user.display_name || email.split('@')[0] || 'Usuario',
     avatarUrl: user.avatar_url || null,
   };
 }

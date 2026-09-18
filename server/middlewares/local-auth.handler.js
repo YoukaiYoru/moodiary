@@ -3,7 +3,12 @@ const { getUserFromSession } = require('../services/auth.service');
 function getSessionToken(req) {
   const cookies = String(req.headers.cookie || '').split(';');
   const entry = cookies.find((cookie) => cookie.trim().startsWith('moodiary_session='));
-  return entry ? decodeURIComponent(entry.trim().slice('moodiary_session='.length)) : null;
+  if (!entry) return null;
+  try {
+    return decodeURIComponent(entry.trim().slice('moodiary_session='.length));
+  } catch {
+    return null;
+  }
 }
 
 async function localAuthMiddleware(req, _res, next) {

@@ -35,7 +35,6 @@ import {
   Notebook,
   ChevronDown,
   Search,
-  Settings,
 } from "lucide-react";
 
 dayjs.extend(timezone);
@@ -152,17 +151,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem key="Perfil">
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/dashboard/profile"
-                    className={({ isActive }) => cn(isActive ? "text-primary font-semibold" : "text-muted-foreground")}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Perfil y ajustes
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <Collapsible defaultOpen className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -217,14 +205,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="m-2 flex items-center justify-between gap-2 p-1 font-delius">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#DDECEF] text-sm font-semibold text-[#455763]" aria-hidden="true">
-            {(user?.displayName || user?.email || "M").slice(0, 1).toUpperCase()}
+      <SidebarFooter className="m-2 flex flex-col gap-1 p-1 font-delius">
+        <NavLink
+          to="/dashboard/profile"
+          className={({ isActive }) => cn(
+            "flex w-full items-center gap-2 rounded-lg p-2 transition hover:bg-[#F1F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAB7BC]",
+            isActive && "bg-[#F1F8FA]",
+          )}
+          aria-label="Abrir perfil y ajustes"
+        >
+          <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DDECEF] text-sm font-semibold text-[#455763]" aria-hidden="true">
+            {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : (user?.displayName || user?.email || "M").slice(0, 1).toUpperCase()}
           </div>
           <span className="min-w-0 truncate text-sm text-[#455763]">{user?.displayName || user?.email}</span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => void logout()} className="shrink-0 text-[#68777D] hover:text-[#455763]">Salir</Button>
+        </NavLink>
+        <Button variant="ghost" size="sm" onClick={() => void logout()} className="w-full justify-start text-[#68777D] hover:text-[#455763]">Salir</Button>
       </SidebarFooter>
     </Sidebar>
   );

@@ -1,19 +1,15 @@
 const express = require('express');
-const { config } = require('../config/config');
 const { register, login, revokeSession, getUserFromSession, publicUser } = require('../services/auth.service');
 const { getSessionToken } = require('../middlewares/local-auth.handler');
+const { serializeSessionCookie, serializeClearedSessionCookie } = require('../lib/session-cookie');
 
 const router = express.Router();
-const cookieName = 'moodiary_session';
-const sameSite = config.authCookieSameSite;
-const secure = config.isProd || config.authCookieSecure;
-
 function setSessionCookie(res, session) {
-  res.setHeader('Set-Cookie', `${cookieName}=${encodeURIComponent(session.rawToken)}; Max-Age=${session.maxAge}; Path=/; HttpOnly; SameSite=${sameSite}${secure ? '; Secure' : ''}`);
+  res.setHeader('Set-Cookie', serializeSessionCookie(session.rawToken, session.maxAge));
 }
 
 function clearSessionCookie(res) {
-  res.setHeader('Set-Cookie', `${cookieName}=; Max-Age=0; Path=/; HttpOnly; SameSite=${sameSite}${secure ? '; Secure' : ''}`);
+  res.setHeader('Set-Cookie', serializeClearedSessionCookie());
 }
 
 router.get('/me', async (req, res, next) => {

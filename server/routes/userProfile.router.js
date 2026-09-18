@@ -2,7 +2,7 @@ const express = require('express');
 const { requireLocalAuth } = require('../middlewares/local-auth.handler');
 const ProfileService = require('../services/userProfile.service');
 const { changePassword } = require('../services/auth.service');
-const { config } = require('../config/config');
+const { serializeSessionCookie } = require('../lib/session-cookie');
 
 const router = express.Router();
 const service = new ProfileService();
@@ -29,7 +29,7 @@ router.get('/mood', requireLocalAuth, async (req, res, next) => {
 });
 
 // POST /api/profile - Crear perfil si no existe (opcional, útil al registrarse)
-router.post('/', async (req, res, next) => {
+router.post('/', requireLocalAuth, async (req, res, next) => {
   try {
     const userId = req.auth.userId;
     const profile = await service.createIfNotExists(userId);
@@ -40,7 +40,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PATCH /api/profile - Actualizar campos del perfil (ej. mood, notas)
-router.patch('/', async (req, res, next) => {
+router.patch('/', requireLocalAuth, async (req, res, next) => {
   try {
     const userId = req.auth.userId;
     const allowed = ['display_name', 'preferred_mood', 'avatar_url'];
@@ -66,19 +66,19 @@ router.patch('/', async (req, res, next) => {
   }
 });
 
-router.patch('/password', async (req, res, next) => {
+router.patch('/password', requireLocalAuth, async (req, res, next) => {
   try {
     const userId = req.auth.userId;
     const session = await changePassword(userId, req.body?.currentPassword, req.body?.newPassword);
     const { rawToken, maxAge } = session;
-    res.setHeader('Set-Cookie', `moodiary_session=${encodeURIComponent(rawToken)}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=${config.authCookieSameSite}${config.authCookieSecure ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', serializeSessionCookie(rawToken, maxAge));
     res.json({ message: 'Contraseña actualizada' });
   } catch (error) {
     next(error);
   }
 });
 
-router.delete('/data', async (req, res, next) => {
+router.delete('/data', requireLocalAuth, async (req, res, next) => {
   try {
     res.json(await service.deleteData(req.auth.userId, req.body?.currentPassword));
   } catch (error) {
@@ -87,7 +87,7 @@ router.delete('/data', async (req, res, next) => {
 });
 
 // DELETE /api/profile - Eliminar perfil (si decides permitirlo)
-router.delete('/', async (req, res, next) => {
+router.delete('/', requireLocalAuth, async (req, res, next) => {
   try {
     const userId = req.auth.userId;
     const result = await service.delete(userId, req.body?.currentPassword);

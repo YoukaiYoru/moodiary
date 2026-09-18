@@ -6,6 +6,14 @@ dotenv.config({ path: path.resolve(__dirname, `../.env.${environment}`) });
 dotenv.config();
 const dns = require('node:dns');
 
+function normalizeOrigin(value) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
 // Selecciona la familia DNS usada por PostgreSQL: 4 (IPv4) o 6 (IPv6).
 dns.setDefaultResultOrder(process.env.DB_IP_FAMILY === '6' ? 'ipv6first' : 'ipv4first');
 
@@ -29,6 +37,7 @@ const config = {
   frontendUrls: (process.env.FRONTEND_URLS || '')
     .split(',')
     .map((origin) => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean),
   adminUserIds: (process.env.ADMIN_USER_IDS || '')
     .split(',')
