@@ -7,12 +7,14 @@ import {
 
 const Footer = () => {
     return (
-        // <footer className="bg-transparent rounded-t-lg flex items-center justify-end shadow px-10 py-1 dark:bg-gray-800 antialiased">
-        <footer className="bg-[#D3DADC] rounded-t-lg flex items-center justify-end shadow px-10 py-1 dark:bg-gray-800 antialiased">
-            <p className="text-gray-700 dark:text-gray-400 text-[1rem]">
-                &copy; {new Date().getFullYear()} Moodiary.&nbsp;Todos los derechos reservados.&nbsp;&nbsp;
+        <footer className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-t-lg bg-[#D3DADC] px-4 py-2 text-center shadow antialiased sm:justify-end sm:px-10">
+            <p className="text-sm text-gray-700 dark:text-gray-400">
+                &copy; {new Date().getFullYear()} Moodiary. Todos los derechos reservados.
             </p>
-            <div className="flex justify-center items-center space-x-1">
+            <p className="text-sm text-gray-700 dark:text-gray-400">
+                made by Yoru &amp; Samwich
+            </p>
+            <div className="flex items-center">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -20,7 +22,8 @@ const Footer = () => {
                                 href="https://github.com/YoukaiYoru/moodiary"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex justify-center p-2 text-gray-500 rounded-lg cursor-pointer dark:text-gray-400 dark:hover:text-white hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                aria-label="Ver repositorio de Moodiary en GitHub"
+                                className="inline-flex cursor-pointer justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#455763] dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white">
                                 <svg
                                     className="w-7 h-7"
                                     aria-hidden="true"
@@ -35,7 +38,7 @@ const Footer = () => {
                             </a>
                         </TooltipTrigger>
                         <TooltipContent>
-                            Califícanos en GitHub
+                            Ver repositorio en GitHub
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
