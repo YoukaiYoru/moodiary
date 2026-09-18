@@ -18,7 +18,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="relative flex min-h-screen min-h-[100dvh] w-full items-center justify-center overflow-x-hidden overflow-y-auto">
+      <div className="relative flex min-h-svh w-full items-center justify-center overflow-x-hidden">
         <BackgroundImage />
         <MainContent onOpenAuth={() => setAuthOpen(true)} />
       </div>
@@ -28,12 +28,12 @@ export default function Home() {
   if (isAuthenticated) return <Loader isLoaded={false} />;
 
   return (
-    <div className="relative flex min-h-screen min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto">
+    <div className="relative flex min-h-svh w-full flex-col overflow-x-hidden">
       <BackgroundImage />
       <div className="relative z-10 flex flex-grow flex-col items-center justify-center px-4 py-8 sm:py-10">
         <MainContent onOpenAuth={() => setAuthOpen(true)} />
       </div>
-      <div className="relative z-10">
+      <div className="relative z-10 shrink-0">
         <Footer />
       </div>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
