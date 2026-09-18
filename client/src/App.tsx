@@ -9,7 +9,6 @@ import Loader from "./components/Loader";
 const HomeLogin = lazy(() => import("./pages/HomeLogin"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const MoodNotes = lazy(() => import("./pages/MoodNotes"));
-const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 
 function App() {
   return (
@@ -47,14 +46,6 @@ function App() {
           element={
             <Suspense fallback={<Loader isLoaded={false} />}>
               <MoodNotes />
-            </Suspense>
-          }
-        />
-        <Route
-          path="profile"
-          element={
-            <Suspense fallback={<Loader isLoaded={false} />}>
-              <ProfileSettings />
             </Suspense>
           }
         />

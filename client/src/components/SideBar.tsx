@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy } from "react";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import api from "@/lib/axios";
@@ -28,6 +28,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { NoteUpdateContext } from "@/contexts/NoteUpdateContext";
 
+const ProfileSettings = lazy(() => import("@/pages/ProfileSettings"));
+
 import {
   Home,
   BarChart2,
@@ -41,6 +43,7 @@ dayjs.extend(timezone);
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date>();
 
   const context = React.useContext(NoteUpdateContext);
@@ -206,21 +209,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="m-2 flex flex-col gap-1 p-1 font-delius">
-        <NavLink
-          to="/dashboard/profile"
-          className={({ isActive }) => cn(
-            "flex w-full items-center gap-2 rounded-lg p-2 transition hover:bg-[#F1F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAB7BC]",
-            isActive && "bg-[#F1F8FA]",
-          )}
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="flex w-full items-center gap-2 rounded-lg p-2 text-left transition hover:bg-[#F1F8FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAB7BC]"
           aria-label="Abrir perfil y ajustes"
         >
           <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DDECEF] text-sm font-semibold text-[#455763]" aria-hidden="true">
             {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : (user?.displayName || user?.email || "M").slice(0, 1).toUpperCase()}
           </div>
           <span className="min-w-0 truncate text-sm text-[#455763]">{user?.displayName || user?.email}</span>
-        </NavLink>
+        </button>
         <Button variant="ghost" size="sm" onClick={() => void logout()} className="w-full justify-start text-[#68777D] hover:text-[#455763]">Salir</Button>
       </SidebarFooter>
+      <React.Suspense fallback={null}>
+        {profileOpen && <ProfileSettings open={profileOpen} onClose={() => setProfileOpen(false)} />}
+      </React.Suspense>
     </Sidebar>
   );
 }
