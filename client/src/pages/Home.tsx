@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "@/components/AuthModal";
 import { useState } from "react";
+import backgroundImage from "@/assets/background_image.webp";
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -28,9 +29,9 @@ export default function Home() {
   if (isAuthenticated) return <Loader isLoaded={false} />;
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col overflow-x-hidden">
+    <div className="relative flex min-h-svh w-full flex-col overflow-hidden">
       <BackgroundImage />
-      <div className="relative z-10 flex flex-grow flex-col items-center justify-center px-4 py-8 sm:py-10">
+      <div className="relative z-10 flex flex-grow flex-col items-center justify-center px-4 pb-0 pt-8 sm:pt-10">
         <MainContent onOpenAuth={() => setAuthOpen(true)} />
       </div>
       <div className="relative z-10 shrink-0">
@@ -43,7 +44,11 @@ export default function Home() {
 
 function BackgroundImage() {
   return (
-    <div className="absolute inset-0 bg-[url(assets/background_image.webp)] bg-center bg-cover opacity-60 brightness-100 dark:brightness-75 scale-105 z-0" />
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 z-0 bg-cover bg-center opacity-60 brightness-100 dark:brightness-75"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    />
   );
 }
 
